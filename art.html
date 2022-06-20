@@ -52,25 +52,18 @@
         <input type="button" id="redo" onclick="Redo();">
         <input type="button" value="White Pen" onclick="whitePen();">
         <input type="button" value="Back Pen"  onclick="blackPen();">
-        Layer:<span id="viewLayer"></span><input id="drowLayer" type="range" onclick="ReDrow();" min="0" max="9" step="1" value="0">
-        Color:<span id="viewColor"></span><input id="drowColor" type="color" onclick="ReDrow();" value="#000000">
-        Alpha:<span id="viewAlpha"></span><input id="drowAlpha" type="range" onclick="ReDrow();" min="1" max="100" step="1" value="100">
-        Bold:<span id="viewBold"></span><input id="drowBold" type="range" min="1" max="200" step="1" value="5">
+        Layer:<span id="viewLayer"></span><input id="drowLayer" type="range" oninput="ReDrow();" min="0" max="9" step="1" value="0">
+        Color:<span id="viewColor"></span><input id="drowColor" type="color" oninput="ReDrow();" value="#000000">
+        Alpha:<span id="viewAlpha"></span><input id="drowAlpha" type="range" oninput="ReDrow();" min="1" max="100" step="1" value="100">
+        Bold:<span id="viewBold"></span><input id="drowBold" type="range" oninput="ReDrow();" min="1" max="200" step="1" value="5">
         <input type="button" value="Clear" id="clear" onclick="AreaClear();">
       </div>
       <div class="option">
-        Layer0:<input id="layerAlpha0" type="range" min="0" max="100" value="100" data-layer="layer0" oninput="OpacityUpdate(this);">
-        Layer1:<input id="layerAlpha1" type="range" min="0" max="100" value="100" data-layer="layer1" oninput="OpacityUpdate(this);">
-        Layer2:<input id="layerAlpha2" type="range" min="0" max="100" value="100" data-layer="layer2" oninput="OpacityUpdate(this);">
-        Layer3:<input id="layerAlpha3" type="range" min="0" max="100" value="100" data-layer="layer3" oninput="OpacityUpdate(this);">
-        Layer4:<input id="layerAlpha4" type="range" min="0" max="100" value="100" data-layer="layer4" oninput="OpacityUpdate(this);">
-      </div>
-      <div class="option">
-        Layer5:<input id="layerAlpha5" type="range" min="0" max="100" value="100" data-layer="layer5" oninput="OpacityUpdate(this);">
-        Layer6:<input id="layerAlpha6" type="range" min="0" max="100" value="100" data-layer="layer6" oninput="OpacityUpdate(this);">
-        Layer7:<input id="layerAlpha7" type="range" min="0" max="100" value="100" data-layer="layer7" oninput="OpacityUpdate(this);">
-        Layer8:<input id="layerAlpha8" type="range" min="0" max="100" value="100" data-layer="layer8" oninput="OpacityUpdate(this);">
-        Layer9:<input id="layerAlpha9" type="range" min="0" max="100" value="100" data-layer="layer9" oninput="OpacityUpdate(this);">
+        Layer0:<input id="layerAlpha0" type="range" min="0" max="100" value="100" data-layer="layer0" oninput="OpacityUpdate(this.dataset.layer);">
+        Layer1:<input id="layerAlpha1" type="range" min="0" max="100" value="100" data-layer="layer1" oninput="OpacityUpdate(this.dataset.layer);">
+        Layer2:<input id="layerAlpha2" type="range" min="0" max="100" value="100" data-layer="layer2" oninput="OpacityUpdate(this.dataset.layer);">
+        Layer3:<input id="layerAlpha3" type="range" min="0" max="100" value="100" data-layer="layer3" oninput="OpacityUpdate(this.dataset.layer);">
+        Layer4:<input id="layerAlpha4" type="range" min="0" max="100" value="100" data-layer="layer4" oninput="OpacityUpdate(this.dataset.layer);">
       </div>
     </div>
   </body>
@@ -153,7 +146,7 @@
       document.getElementById("main").innerHTML = "<h1>Connection Closed</h1><br><h1>Please Reload After</h1>";
     });
 
-    // 関数
+    // Listener関数
     function WriteStart(x,y) {
       if (isClicked != 0 || CountLines()) {return false};
       console.log("Write Start");
@@ -209,64 +202,8 @@
         info.innerHTML = "";
       }
     }
-    function UUID() {
-      var A = Math.floor(16**8 * Math.random()).toString(16);
-      var B = Math.floor(16**8 * Math.random()).toString(16);
-      var C = Math.floor(16**8 * Math.random()).toString(16);
-      return A+B+C;
-    }
-    function CountLines() {
-      lines = 0
-      for (var i = 0; i < 10; i++) {
-        lines += document.getElementById("layer"+i).childElementCount
-      }
-      if (lines > 1000) {
-        return true
-      }
-    }
-    function str2HTML(html) {
-      const dummyElement = document.createElement('div');
-      dummyElement.innerHTML = html;
-      return dummyElement.firstElementChild;
-    }
-    function isPhone() {
-      if (navigator.userAgent.match(/iPad|iPhone|Android.+Mobile/)) {
-        return true;
-      } else {
-        return false;
-      }
-    }
-    function ReDrow() {
-      document.getElementById('undo').value = "Undo("+writeCache.length+")";
-      document.getElementById('redo').value = "Redo("+undoCache.length+")";
-      document.getElementById('viewLayer').innerText = drowLayer.value;
-      document.getElementById('viewColor').innerText = drowColor.value;
-      document.getElementById('viewAlpha').innerText = drowAlpha.value.padStart(3,"0")+"%";
-      document.getElementById('viewBold').innerText = drowBold.value.padStart(3,"0");
-    }
-    function downloadPNG() {// DL
-      var svgData = new XMLSerializer().serializeToString(svg);
-      var canvas = document.createElement("canvas");
-      canvas.width = svg.width.baseVal.value;
-      canvas.height = svg.height.baseVal.value;
-      var ctx = canvas.getContext("2d");
-      var image = new Image;
-      image.src = "data:image/svg+xml;charset=utf-8;base64," + btoa(unescape(encodeURIComponent(svgData)));
-      image.onload = function(){
-        ctx.drawImage( image, 0, 0 );
-        var dl = document.createElement("a");
-        dl.href = canvas.toDataURL("image/jpg");
-        dl.setAttribute("download", "image.jpg");
-        dl.dispatchEvent(new MouseEvent("click"));
-      }
-    };
-    function downloadSVG() {// DL
-      var svgData = new XMLSerializer().serializeToString(svg);
-      var dl = document.createElement("a");
-      dl.href = "data:image/svg+xml;charset=utf-8;base64," + btoa(unescape(encodeURIComponent(svgData)))
-      dl.setAttribute("download", "image.svg");
-      dl.dispatchEvent(new MouseEvent("click"));
-    };
+
+    // 呼び出し関数
     function Undo() { //1つ戻す
       if (writeCache.length > 0) {
         var del = writeCache.splice(-1,1)
@@ -309,8 +246,68 @@
       undoCache=[];
       ws.send(JSON.stringify({ type: "clear", layer:"",data:""}));
     };
-    function OpacityUpdate(e) {
-      document.getElementById(e.dataset.layer).style.opacity = e.value/100
+    function downloadPNG() {// DL
+      var svgData = new XMLSerializer().serializeToString(svg);
+      var canvas = document.createElement("canvas");
+      canvas.width = svg.width.baseVal.value;
+      canvas.height = svg.height.baseVal.value;
+      var ctx = canvas.getContext("2d");
+      var image = new Image;
+      image.src = "data:image/svg+xml;charset=utf-8;base64," + btoa(unescape(encodeURIComponent(svgData)));
+      image.onload = function(){
+        ctx.drawImage( image, 0, 0 );
+        var dl = document.createElement("a");
+        dl.href = canvas.toDataURL("image/jpg");
+        dl.setAttribute("download", "image.jpg");
+        dl.dispatchEvent(new MouseEvent("click"));
+      }
+    };
+    function downloadSVG() {// DL
+      var svgData = new XMLSerializer().serializeToString(svg);
+      var dl = document.createElement("a");
+      dl.href = "data:image/svg+xml;charset=utf-8;base64," + btoa(unescape(encodeURIComponent(svgData)))
+      dl.setAttribute("download", "image.svg");
+      dl.dispatchEvent(new MouseEvent("click"));
+    };
+    function OpacityUpdate(layerID) {
+      document.getElementById(layerID).style.opacity = e.value/100
+    }
+
+    // その他関数
+    function ReDrow() {
+      document.getElementById('undo').value = "Undo("+writeCache.length+")";
+      document.getElementById('redo').value = "Redo("+undoCache.length+")";
+      document.getElementById('viewLayer').innerText = drowLayer.value;
+      document.getElementById('viewColor').innerText = drowColor.value;
+      document.getElementById('viewAlpha').innerText = drowAlpha.value.padStart(3,"0")+"%";
+      document.getElementById('viewBold').innerText = drowBold.value.padStart(3,"0");
+    }
+    function UUID() {
+      var A = Math.floor(16**8 * Math.random()).toString(16);
+      var B = Math.floor(16**8 * Math.random()).toString(16);
+      var C = Math.floor(16**8 * Math.random()).toString(16);
+      return A+B+C;
+    }
+    function CountLines() {
+      lines = 0
+      for (var i = 0; i < 10; i++) {
+        lines += document.getElementById("layer"+i).childElementCount
+      }
+      if (lines > 1000) {
+        return true
+      }
+    }
+    function str2HTML(html) {
+      const dummyElement = document.createElement('div');
+      dummyElement.innerHTML = html;
+      return dummyElement.firstElementChild;
+    }
+    function isPhone() {
+      if (navigator.userAgent.match(/iPad|iPhone|Android.+Mobile/)) {
+        return true;
+      } else {
+        return false;
+      }
     }
 
     // 初期化
