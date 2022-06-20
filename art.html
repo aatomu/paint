@@ -119,51 +119,6 @@
       Writing(x,y);
     });
     window.addEventListener('touchend',function() {WriteEnd()});//タップ:書き終わり
-    function Undo() { //1つ戻す
-      if (writeCache.length > 0) {
-        var del = writeCache.splice(-1,1)
-        var line = document.getElementById(del)
-        if (line != null) {
-          undoCache.push(JSON.stringify({layer:line.parentNode.id,data:line.outerHTML}))
-          line.remove();
-        ws.send(JSON.stringify({ type: "delete", layer:"",data:line.id}))
-        }
-      }
-      ReDrow();
-    }
-    function Redo() { //1つ進む
-      if (undoCache.length > 0) {
-        var add = undoCache.splice(-1,1)
-        if (add != null) {
-          json = JSON.parse(add)
-          document.getElementById(json.layer).innerHTML += "\n"+json.data
-          writeCache.push(str2HTML(json.data).id)
-          ws.send(JSON.stringify({ type: "append", layer:json.layer,data:json.data}))
-        }
-      }
-      ReDrow();
-    }
-    function whitePen() {
-      drowColor.value = "#FFFFFF";
-      drowBold.value = "50";
-      ReDrow();
-    };
-    function blackPen() {
-      drowColor.value = "#000000";
-      drowBold.value = "5";
-      ReDrow();
-    };
-    function AreaClear() {//削除
-      for (var i = 0; i < 10; i++) {
-        document.getElementById("layer"+i).innerHTML = ""
-      }
-      writeCache=[];
-      undoCache=[];
-      ws.send(JSON.stringify({ type: "clear", layer:"",data:""}));
-    };
-    function OpacityUpdate(e) {
-      document.getElementById(e.dataset.layer).style.opacity = e.value/100
-    }
     ws.addEventListener('open',function() {//ソケットが開いたらroomを送信
       ws.send(room)
     });
@@ -312,7 +267,52 @@
       dl.setAttribute("download", "image.svg");
       dl.dispatchEvent(new MouseEvent("click"));
     };
-    
+    function Undo() { //1つ戻す
+      if (writeCache.length > 0) {
+        var del = writeCache.splice(-1,1)
+        var line = document.getElementById(del)
+        if (line != null) {
+          undoCache.push(JSON.stringify({layer:line.parentNode.id,data:line.outerHTML}))
+          line.remove();
+        ws.send(JSON.stringify({ type: "delete", layer:"",data:line.id}))
+        }
+      }
+      ReDrow();
+    }
+    function Redo() { //1つ進む
+      if (undoCache.length > 0) {
+        var add = undoCache.splice(-1,1)
+        if (add != null) {
+          json = JSON.parse(add)
+          document.getElementById(json.layer).innerHTML += "\n"+json.data
+          writeCache.push(str2HTML(json.data).id)
+          ws.send(JSON.stringify({ type: "append", layer:json.layer,data:json.data}))
+        }
+      }
+      ReDrow();
+    }
+    function whitePen() {
+      drowColor.value = "#FFFFFF";
+      drowBold.value = "50";
+      ReDrow();
+    };
+    function blackPen() {
+      drowColor.value = "#000000";
+      drowBold.value = "5";
+      ReDrow();
+    };
+    function AreaClear() {//削除
+      for (var i = 0; i < 10; i++) {
+        document.getElementById("layer"+i).innerHTML = ""
+      }
+      writeCache=[];
+      undoCache=[];
+      ws.send(JSON.stringify({ type: "clear", layer:"",data:""}));
+    };
+    function OpacityUpdate(e) {
+      document.getElementById(e.dataset.layer).style.opacity = e.value/100
+    }
+
     // 初期化
     document.title = 'お絵描き 部屋:'+room
     ReDrow();
