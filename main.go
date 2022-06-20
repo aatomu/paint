@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/atomu21263/atomicgo"
@@ -36,7 +38,9 @@ func main() {
 		}
 	}()
 	// 移動
-	atomicgo.MoveWorkDir(atomicgo.GetGoDir())
+	_, file, _, _ := runtime.Caller(0)
+	goDir := filepath.Dir(file) + "/"
+	atomicgo.MoveWorkDir(goDir)
 	// 保存先
 	if !atomicgo.CheckFile(Save) {
 		atomicgo.CreateDir(Save, 0766)
