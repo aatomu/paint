@@ -289,7 +289,30 @@
       document.getElementById('viewAlpha').innerText = drowAlpha.value.padStart(3,"0")+"%";
       document.getElementById('viewBold').innerText = drowBold.value.padStart(3,"0");
     }
-
+    function downloadPNG() {// DL
+      var svgData = new XMLSerializer().serializeToString(svg);
+      var canvas = document.createElement("canvas");
+      canvas.width = svg.width.baseVal.value;
+      canvas.height = svg.height.baseVal.value;
+      var ctx = canvas.getContext("2d");
+      var image = new Image;
+      image.src = "data:image/svg+xml;charset=utf-8;base64," + btoa(unescape(encodeURIComponent(svgData)));
+      image.onload = function(){
+        ctx.drawImage( image, 0, 0 );
+        var dl = document.createElement("a");
+        dl.href = canvas.toDataURL("image/jpg");
+        dl.setAttribute("download", "image.jpg");
+        dl.dispatchEvent(new MouseEvent("click"));
+      }
+    };
+    function downloadSVG() {// DL
+      var svgData = new XMLSerializer().serializeToString(svg);
+      var dl = document.createElement("a");
+      dl.href = "data:image/svg+xml;charset=utf-8;base64," + btoa(unescape(encodeURIComponent(svgData)))
+      dl.setAttribute("download", "image.svg");
+      dl.dispatchEvent(new MouseEvent("click"));
+    };
+    
     // 初期化
     document.title = 'お絵描き 部屋:'+room
     ReDrow();
