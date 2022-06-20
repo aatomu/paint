@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>お絵描き</title>
+    <style>
+      body {
+        text-align: center;
+      }
+      .lock {
+        margin-left: auto;
+        margin-right: auto;
+        position: relative;
+        width: 1280px;
+        height: 720px;
+      }
+      .area {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        -webkit-transform: translate(-50%, -50%);
+        -ms-transform: translate(-50%, -50%);
+        border: solid 5px #000;
+        box-sizing: border-box;
+      }
+    </style>
+  </head>
+  <body>
+    <h1 id="info">
+    </h1>
+    <div id="main" style="display: none;">
+      <div class="lock" id="lock">
+        <svg id="background" class="area" width="1280px" height="720px" xmlns="http://www.w3.org/2000/svg" style="fill: none; stroke-linecap:round; stroke-linejoin:round;">
+          <rect x="0" y="0" width="1280" height="720" fill="white"/>
+        </svg>
+        <svg id="layer0" class="area" width="1280px" height="720px" xmlns="http://www.w3.org/2000/svg" style="fill: none; stroke-linecap:round; stroke-linejoin:round;"></svg>
+        <svg id="layer1" class="area" width="1280px" height="720px" xmlns="http://www.w3.org/2000/svg" style="fill: none; stroke-linecap:round; stroke-linejoin:round;"></svg>
+        <svg id="layer2" class="area" width="1280px" height="720px" xmlns="http://www.w3.org/2000/svg" style="fill: none; stroke-linecap:round; stroke-linejoin:round;"></svg>
+        <svg id="layer3" class="area" width="1280px" height="720px" xmlns="http://www.w3.org/2000/svg" style="fill: none; stroke-linecap:round; stroke-linejoin:round;"></svg>
+        <svg id="layer4" class="area" width="1280px" height="720px" xmlns="http://www.w3.org/2000/svg" style="fill: none; stroke-linecap:round; stroke-linejoin:round;"></svg>
+        <svg id="layer5" class="area" width="1280px" height="720px" xmlns="http://www.w3.org/2000/svg" style="fill: none; stroke-linecap:round; stroke-linejoin:round;"></svg>
+        <svg id="layer6" class="area" width="1280px" height="720px" xmlns="http://www.w3.org/2000/svg" style="fill: none; stroke-linecap:round; stroke-linejoin:round;"></svg>
+        <svg id="layer7" class="area" width="1280px" height="720px" xmlns="http://www.w3.org/2000/svg" style="fill: none; stroke-linecap:round; stroke-linejoin:round;"></svg>
+        <svg id="layer8" class="area" width="1280px" height="720px" xmlns="http://www.w3.org/2000/svg" style="fill: none; stroke-linecap:round; stroke-linejoin:round;"></svg>
+        <svg id="layer9" class="area" width="1280px" height="720px" xmlns="http://www.w3.org/2000/svg" style="fill: none; stroke-linecap:round; stroke-linejoin:round;"></svg>
+        <svg id="cache" class="area" width="1280px" height="720px" xmlns="http://www.w3.org/2000/svg" style="fill: none; stroke-linecap:round; stroke-linejoin:round;">
+        </svg>
+      </div>
+      <div class="option">
+        <input type="button" id="undo" onclick="Undo();">
+        <input type="button" id="redo" onclick="Redo();">
+        <input type="button" value="White Pen" onclick="whitePen();">
+        <input type="button" value="Back Pen"  onclick="blackPen();">
+        Layer:<span id="viewLayer"></span><input id="drowLayer" type="range" onclick="ReDrow();" min="0" max="9" step="1" value="0">
+        Color:<span id="viewColor"></span><input id="drowColor" type="color" onclick="ReDrow();" value="#000000">
+        Alpha:<span id="viewAlpha"></span><input id="drowAlpha" type="range" onclick="ReDrow();" min="1" max="100" step="1" value="100">
+        Bold:<span id="viewBold"></span><input id="drowBold" type="range" min="1" max="200" step="1" value="5">
+        <input type="button" value="Clear" id="clear" onclick="AreaClear();">
+      </div>
+      <div class="option">
+        Layer0:<input id="layerAlpha0" type="range" min="0" max="100" value="100" data-layer="layer0" oninput="OpacityUpdate(this);">
+        Layer1:<input id="layerAlpha1" type="range" min="0" max="100" value="100" data-layer="layer1" oninput="OpacityUpdate(this);">
+        Layer2:<input id="layerAlpha2" type="range" min="0" max="100" value="100" data-layer="layer2" oninput="OpacityUpdate(this);">
+        Layer3:<input id="layerAlpha3" type="range" min="0" max="100" value="100" data-layer="layer3" oninput="OpacityUpdate(this);">
+        Layer4:<input id="layerAlpha4" type="range" min="0" max="100" value="100" data-layer="layer4" oninput="OpacityUpdate(this);">
+      </div>
+      <div class="option">
+        Layer5:<input id="layerAlpha5" type="range" min="0" max="100" value="100" data-layer="layer5" oninput="OpacityUpdate(this);">
+        Layer6:<input id="layerAlpha6" type="range" min="0" max="100" value="100" data-layer="layer6" oninput="OpacityUpdate(this);">
+        Layer7:<input id="layerAlpha7" type="range" min="0" max="100" value="100" data-layer="layer7" oninput="OpacityUpdate(this);">
+        Layer8:<input id="layerAlpha8" type="range" min="0" max="100" value="100" data-layer="layer8" oninput="OpacityUpdate(this);">
+        Layer9:<input id="layerAlpha9" type="range" min="0" max="100" value="100" data-layer="layer9" oninput="OpacityUpdate(this);">
+      </div>
+    </div>
+  </body>
+  <script>
+    var info         = document.getElementById('info') //お知らせ表示
+    var cache        = document.getElementById('cache');
+    var isClicked    = 0;
+    var drowLayer    = document.getElementById('drowLayer');
+    var drowColor    = document.getElementById('drowColor');
+    var drowAlpha    = document.getElementById('drowAlpha');
+    var drowBold     = document.getElementById('drowBold');
+    var writeCache   = [];
+    var undoCache    = [];
+    let loc          = window.location;     // Websocket変数
+    let uri          = 'ws:';
+    if (loc.protocol === 'https:') {
+        uri = 'wss:';
+    };
+    uri += '//' + loc.host + loc.pathname + 'websocket';
+    const ws = new WebSocket(uri);
+    const searchParams = new URLSearchParams(window.location.search)
+    const room = searchParams.get('room')
+
+    // Lisner設定
+    cache.addEventListener('mousedown', function(e) {WriteStart(e.offsetX,e.offsetY)}); //マウス:書き始め
+    cache.addEventListener('mousemove', function(e) {{Writing(e.offsetX,e.offsetY)}});  //マウス:移動
+    window.addEventListener('mouseup', function() {WriteEnd()});                         //マウス:書き終わり
+    cache.addEventListener('touchstart',function(e) { //タップ:書き始め
+      e.preventDefault();
+      // 要素内におけるタッチ位置を計算
+      var clientRect = this.getBoundingClientRect();
+      var positionX = clientRect.left + window.pageXOffset;
+      var positionY = clientRect.top + window.pageYOffset;
+      var x = e.touches[0].pageX - positionX;
+      var y = e.touches[0].pageY - positionY;
+      // 書き始めを設定
+      WriteStart(x,y)});
+    cache.addEventListener('touchmove',function(e) { //タップ:移動
+      // 要素内におけるタッチ位置を計算
+      var clientRect = this.getBoundingClientRect();
+      var positionX = clientRect.left + window.pageXOffset;
+      var positionY = clientRect.top + window.pageYOffset;
+      var x = e.touches[0].pageX - positionX;
+      var y = e.touches[0].pageY - positionY;
+      // 書き始めを設定
+      Writing(x,y);
+    });
+    window.addEventListener('touchend',function() {WriteEnd()});//タップ:書き終わり
+    function Undo() { //1つ戻す
+      if (writeCache.length > 0) {
+        var del = writeCache.splice(-1,1)
+        var line = document.getElementById(del)
+        if (line != null) {
+          undoCache.push(JSON.stringify({layer:line.parentNode.id,data:line.outerHTML}))
+          line.remove();
+        ws.send(JSON.stringify({ type: "delete", layer:"",data:line.id}))
+        }
+      }
+      ReDrow();
+    }
+    function Redo() { //1つ進む
+      if (undoCache.length > 0) {
+        var add = undoCache.splice(-1,1)
+        if (add != null) {
+          json = JSON.parse(add)
+          document.getElementById(json.layer).innerHTML += "\n"+json.data
+          writeCache.push(str2HTML(json.data).id)
+          ws.send(JSON.stringify({ type: "append", layer:json.layer,data:json.data}))
+        }
+      }
+      ReDrow();
+    }
+    function whitePen() {
+      drowColor.value = "#FFFFFF";
+      drowBold.value = "50";
+      ReDrow();
+    };
+    function blackPen() {
+      drowColor.value = "#000000";
+      drowBold.value = "5";
+      ReDrow();
+    };
+    function AreaClear() {//削除
+      for (var i = 0; i < 10; i++) {
+        document.getElementById("layer"+i).innerHTML = ""
+      }
+      writeCache=[];
+      undoCache=[];
+      ws.send(JSON.stringify({ type: "clear", layer:"",data:""}));
+    };
+    function OpacityUpdate(e) {
+      document.getElementById(e.dataset.layer).style.opacity = e.value/100
+    }
+    ws.addEventListener('open',function() {//ソケットが開いたらroomを送信
+      ws.send(room)
+    });
+    ws.addEventListener('message',async function(e) {//鯖からのデータを処理
+      json = JSON.parse(e.data)
+      switch (json.type) {
+        case "append":// 読み込み
+          document.getElementById(json.layer).innerHTML += "\n"+ json.data
+          console.log("Append Line: "+json.layer);
+          return;
+        case "end":// 読み込み終了
+          document.getElementById("main").style.display = "inline";
+          info.innerHTML = "";
+          cache.innerHTML = `<path d="M0,0" id="drowingLine" style="stroke-width: 0px; stroke: 0; opacity: 0;"></path><path d="M0,0" id="mouse"></path>`
+          console.log("Cache: end");
+          return;
+        case "clear": // 全削除
+          for (var i = 0; i < 10; i++) {
+            document.getElementById("layer"+i).innerHTML = ""
+          }
+          writeCache=[];
+          undoCache=[];
+          console.log("Clear");
+          return;
+        case "delete": // 部分削除
+          document.getElementById(json.data).remove();
+        default:
+          console.log("Unknown: "+data[0]);
+        }
+    });
+    ws.addEventListener('close', function() {//ソケットが閉じたのを入手
+      document.getElementById("main").innerHTML = "<h1>Connection Closed</h1><br><h1>Please Reload After</h1>";
+    });
+
+    // 関数
+    function WriteStart(x,y) {
+      if (isClicked != 0 || CountLines()) {return false};
+      console.log("Write Start");
+      isClicked = 1;
+      alpha = drowAlpha.value / 100;
+      uuid = UUID();
+      var line = document.getElementById("drowingLine");
+      line.setAttribute('id',uuid);
+      line.setAttribute('d',`M${x},${y}`);
+      line.setAttribute('style',`stroke-width: ${drowBold.value}px; stroke: ${drowColor.value}; opacity: ${alpha};`);
+    }
+    function Writing(x,y) {
+      var mouse = document.getElementById('mouse');
+      mouse.setAttribute('d',`M${x},${y} L${x},${y}`);
+      alpha = drowAlpha.value / 100
+      mouse.setAttribute('style',`stroke-width: ${drowBold.value}px; stroke: ${drowColor.value}; opacity: ${alpha}`);
+      if(!isClicked) {return false};
+      console.log("Writing");
+      // マウス移動処理
+      var line = document.getElementById(uuid);
+      var nowPath = line.getAttribute('d');
+      line.setAttribute('d',`${nowPath} L${x},${y}`);
+    }
+    function WriteEnd() {
+      if (isClicked == 0) {return};
+      console.log("Write End");
+      isClicked = 0;
+      var line = document.getElementById(uuid);
+      if (line == null) {
+        cache.innerHTML = `<path d="M0,0" id="drowingLine" style="stroke-width: 0px; stroke: 0; opacity: 0;"></path><path d="M0,0" id="mouse"></path>`
+        return
+      };
+      if (line.outerHTML.match(/L/g) == null) {// 移動してない場合
+        if (isPhone()) {
+          document.getElementById("options").scrollIntoView({
+            behavior:"smooth",
+            block: "center",
+            inline: "center"
+          })
+        }
+        cache.innerHTML = `<path d="M0,0" id="drowingLine" style="stroke-width: 0px; stroke: 0; opacity: 0;"></path><path d="M0,0" id="mouse"></path>`
+        return
+      }
+      document.getElementById("layer"+drowLayer.value).insertBefore(line,null);
+      cache.innerHTML = `<path d="M0,0" id="drowingLine" style="stroke-width: 0px; stroke: 0; opacity: 0;"></path><path d="M0,0" id="mouse"></path>`;
+      ws.send(JSON.stringify({ type: "append", layer:"layer"+drowLayer.value,data:line.outerHTML}))
+      writeCache.push(uuid);
+      undoCache = [];
+      ReDrow();
+      if (CountLines()) {
+        info.innerHTML = "書き込み上限に達しました。";
+      } else {
+        info.innerHTML = "";
+      }
+    }
+    function UUID() {
+      var A = Math.floor(16**8 * Math.random()).toString(16);
+      var B = Math.floor(16**8 * Math.random()).toString(16);
+      var C = Math.floor(16**8 * Math.random()).toString(16);
+      return A+B+C;
+    }
+    function CountLines() {
+      lines = 0
+      for (var i = 0; i < 10; i++) {
+        lines += document.getElementById("layer"+i).childElementCount
+      }
+      if (lines > 1000) {
+        return true
+      }
+    }
+    function str2HTML(html) {
+      const dummyElement = document.createElement('div');
+      dummyElement.innerHTML = html;
+      return dummyElement.firstElementChild;
+    }
+    function isPhone() {
+      if (navigator.userAgent.match(/iPad|iPhone|Android.+Mobile/)) {
+        return true;
+      } else {
+        return false;
+      }
+    }
+    function ReDrow() {
+      document.getElementById('undo').value = "Undo("+writeCache.length+")";
+      document.getElementById('redo').value = "Redo("+undoCache.length+")";
+      document.getElementById('viewLayer').innerText = drowLayer.value;
+      document.getElementById('viewColor').innerText = drowColor.value;
+      document.getElementById('viewAlpha').innerText = drowAlpha.value.padStart(3,"0")+"%";
+      document.getElementById('viewBold').innerText = drowBold.value.padStart(3,"0");
+    }
+
+    // 初期化
+    document.title = 'お絵描き 部屋:'+room
+    ReDrow();
+    info.innerHTML = "Now Loading...";
+</script>
+</html>
