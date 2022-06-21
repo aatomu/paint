@@ -59,20 +59,20 @@
       <div class="option">
         <input type="button" id="undo" onclick="Undo();">
         <input type="button" id="redo" onclick="Redo();">
-        <input type="button" value="White Pen" onclick="whitePen();">
-        <input type="button" value="Back Pen"  onclick="blackPen();">
-        Layer:<span id="viewLayer"></span><input id="drowLayer" type="range" oninput="ReDrow();" min="0" max="4" step="1" value="0">
-        Color:<span id="viewColor"></span><input id="drowColor" type="color" oninput="ReDrow();" value="#000000">
-        Alpha:<span id="viewAlpha"></span><input id="drowAlpha" type="range" oninput="ReDrow();" min="1" max="100" step="1" value="100">
-        Bold:<span id="viewBold"></span><input id="drowBold" type="range" oninput="ReDrow();" min="1" max="200" step="1" value="5">
-        <input type="button" value="Clear" id="clear" onclick="AreaClear();">
+        <label>Eraser:<input type="checkbox" onclick="Eraser();"></label>
+        Layer: <span id="viewLayer"></span><input id="drowLayer" type="range" oninput="ReDrow();" min="0" max="4" step="1" value="0">
+        Color: <span id="viewColor"></span><input id="drowColor" type="color" oninput="ReDrow();" value="#000000">
+        Alpha: <span id="viewAlpha"></span><input id="drowAlpha" type="range" oninput="ReDrow();" min="1" max="100" step="1" value="100">
+        Bold: <span id="viewBold"></span><input id="drowBold" type="range" oninput="ReDrow();" min="1" max="200" step="1" value="5">
+        <input type="button" value="Clear" onclick="AreaClear();">
+        DL: <input type="button" value="png" onclick="downloadPNG();"> <input type="button" value="svg" onclick="downloadSVG();">
       </div>
       <div class="option">
-        Layer0:<input id="layerAlpha0" type="checkbox" data-layer="layer0" checked onchange="OpacityUpdate(this.dataset.layer);">
-        Layer1:<input id="layerAlpha1" type="checkbox" data-layer="layer1" checked onchange="OpacityUpdate(this.dataset.layer);">
-        Layer2:<input id="layerAlpha2" type="checkbox" data-layer="layer2" checked onchange="OpacityUpdate(this.dataset.layer);">
-        Layer3:<input id="layerAlpha3" type="checkbox" data-layer="layer3" checked onchange="OpacityUpdate(this.dataset.layer);">
-        Layer4:<input id="layerAlpha4" type="checkbox" data-layer="layer4" checked onchange="OpacityUpdate(this.dataset.layer);">
+        <label>Layer0:<input id="layerAlpha0" type="checkbox" data-layer="layer0" checked onchange="LayerHidden(this.dataset.layer);"></label>
+        <label>Layer1:<input id="layerAlpha1" type="checkbox" data-layer="layer1" checked onchange="LayerHidden(this.dataset.layer);"></label>
+        <label>Layer2:<input id="layerAlpha2" type="checkbox" data-layer="layer2" checked onchange="LayerHidden(this.dataset.layer);"></label>
+        <label>Layer3:<input id="layerAlpha3" type="checkbox" data-layer="layer3" checked onchange="LayerHidden(this.dataset.layer);"></label>
+        <label>Layer4:<input id="layerAlpha4" type="checkbox" data-layer="layer4" checked onchange="LayerHidden(this.dataset.layer);"></label>
       </div>
     </div>
   </body>
@@ -257,6 +257,7 @@
       ws.send(JSON.stringify({ type: "clear", layer:"",data:""}));
     };
     function downloadPNG() {// DL
+      var svg = document.getElementById("layers")
       var svgData = new XMLSerializer().serializeToString(svg);
       var canvas = document.createElement("canvas");
       canvas.width = svg.width.baseVal.value;
@@ -273,13 +274,14 @@
       }
     };
     function downloadSVG() {// DL
+      var svg = document.getElementById("layers")
       var svgData = new XMLSerializer().serializeToString(svg);
       var dl = document.createElement("a");
       dl.href = "data:image/svg+xml;charset=utf-8;base64," + btoa(unescape(encodeURIComponent(svgData)))
       dl.setAttribute("download", "image.svg");
       dl.dispatchEvent(new MouseEvent("click"));
     };
-    function OpacityUpdate(layerID) {
+    function LayerHidden(layerID) {
       var lay = document.getElementById(layerID)
       console.log(layerID+","+lay.style.display)
       if (lay.style.display == "inline") {
