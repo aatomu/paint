@@ -33,26 +33,12 @@
       <div class="lock" id="lock">
         <svg id="layers" class="area" width="1280px" height="720px" xmlns="http://www.w3.org/2000/svg" style="fill: none; stroke-linecap:round; stroke-linejoin:round;">
           <rect x="0" y="0" width="1280" height="720" fill="white"/>
-          <mask id="layer0mask">
-            <rect x="0" y="0" width="1280" height="720" fill="white"/>
-          </mask>
-          <g id="layer0" mask="url(#layer0mask)" style="display: inline;"></g>
-          <mask id="layer1mask">
-            <rect x="0" y="0" width="1280" height="720" fill="white"/>
-          </mask>
-          <g id="layer1" mask="url(#layer1mask)" style="display: inline;"></g>
-          <mask id="layer2mask">
-            <rect x="0" y="0" width="1280" height="720" fill="white"/>
-          </mask>
-          <g id="layer2" mask="url(#layer2mask)" style="display: inline;"></g>
-          <mask id="layer3mask">
-            <rect x="0" y="0" width="1280" height="720" fill="white"/>
-          </mask>
-          <g id="layer3" mask="url(#layer3mask)" style="display: inline;"></g>
-          <mask id="layer4mask">
-            <rect x="0" y="0" width="1280" height="720" fill="white"/>
-          </mask>
-          <g id="layer4" mask="url(#layer4mask)" style="display: inline;"></g>
+          <g id="layer0" style="display: inline;"></g>
+          <g id="layer1" style="display: inline;"></g>
+          <g id="layer2" style="display: inline;"></g>
+          <g id="layer3" style="display: inline;"></g>
+          <g id="layer4" style="display: inline;"></g>
+          <defs id="masks"></defs>
           <g id="cache"></g>
         </svg>
       </div>
@@ -133,6 +119,12 @@
           document.getElementById(json.layer).innerHTML += "\n"+ json.data
           console.log("Append Line: "+json.layer);
           return;
+        case "eraser": //消しゴム
+          document.getElementById("masks").innerHTML += "\n"+ json.data
+          var id = str2HTML(json.data).getAttribute("id")
+          SetMask(json.layer,id)
+          console.log("Eraser Line: "+json.layer);
+          return;
         case "end":// 読み込み終了
           document.getElementById("main").style.display = "inline";
           info.innerHTML = "";
@@ -201,13 +193,19 @@
         cache.innerHTML = `<path d="M0,0" id="drowingLine" style="stroke-width: 0px; stroke: 0; opacity: 0;"></path><path d="M0,0" id="mouse"></path>`
         return
       }
-      layerID = "layer"+drowLayer.value
-      if (isEraser) {
-        layerID = layerID+"mask"
+      if (!isEraser) {
+        document.getElementById("layer"+drowLayer.value).insertBefore(line,null);
+        ws.send(JSON.stringify({type: "append", layer:"layer"+drowLayer.value, data: line.outerHTML}))
+      } else {
+        line.removeAttribute("id")
+        line.style.stroke = "#000000"
+        line.style.opacity = "1"
+        var mask = `<mask id="${uuid}"><rect x="0" y="0" width="1280" height="720" fill="white"></rect>`+line.outerHTML+"</mask>"
+        document.getElementById("masks").innerHTML += "\n"+mask
+        SetMask("layer"+drowLayer.value,uuid)
+        ws.send(JSON.stringify({type: "eraser", layer:"layer"+drowLayer.value, data: mask}))
       }
-      document.getElementById(layerID).insertBefore(line,null);
       cache.innerHTML = `<path d="M0,0" id="drowingLine" style="stroke-width: 0px; stroke: 0; opacity: 0;"></path><path d="M0,0" id="mouse"></path>`;
-      ws.send(JSON.stringify({ type: "append", layer:"layer"+drowLayer.value,data:line.outerHTML}))
       writeCache.push(uuid);
       undoCache = [];
       ReDrow();
@@ -248,7 +246,11 @@
     };
     function AreaClear() {//削除
       for (var i = 0; i < 10; i++) {
-        document.getElementById("layer"+i).innerHTML = ""
+        var lay = document.getElementById("layer"+i)
+        if (lay == null) {
+          break
+        }
+        lay.innerHTML = ""
       }
       writeCache=[];
       undoCache=[];
@@ -288,6 +290,17 @@
         lay.style.display = "inline";
       }
       console.log(layerID+","+lay.style.display)
+    }
+    function SetMask(layerID,id) {
+      var lay = document.getElementById(layerID).children
+      for (var i = 0;i < lay.length; i++) {
+        var masks = lay[i].getAttribute('mask')
+        if (masks == null) {
+          lay[i].setAttribute('mask',`url(#${id})`)
+          continue
+        }
+        lay[i].setAttribute('mask',`${masks},url(#${id})`)
+      }
     }
 
     // その他関数

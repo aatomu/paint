@@ -134,7 +134,7 @@ func WebSocketResponse(ws *websocket.Conn) {
 		// 表示
 		go func() {
 			switch jsonData.Type {
-			case "append":
+			case "append", "eraser":
 				roomData.Jsons = append(roomData.Jsons, str)
 				for _, socket := range roomData.Websockets {
 					if socket != ws {
