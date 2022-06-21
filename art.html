@@ -31,20 +31,29 @@
     </h1>
     <div id="main" style="display: none;">
       <div class="lock" id="lock">
-        <svg id="background" class="area" width="1280px" height="720px" xmlns="http://www.w3.org/2000/svg" style="fill: none; stroke-linecap:round; stroke-linejoin:round;">
+        <svg id="layers" class="area" width="1280px" height="720px" xmlns="http://www.w3.org/2000/svg" style="fill: none; stroke-linecap:round; stroke-linejoin:round;">
           <rect x="0" y="0" width="1280" height="720" fill="white"/>
-        </svg>
-        <svg id="layer0" class="area" width="1280px" height="720px" xmlns="http://www.w3.org/2000/svg" style="fill: none; stroke-linecap:round; stroke-linejoin:round;"></svg>
-        <svg id="layer1" class="area" width="1280px" height="720px" xmlns="http://www.w3.org/2000/svg" style="fill: none; stroke-linecap:round; stroke-linejoin:round;"></svg>
-        <svg id="layer2" class="area" width="1280px" height="720px" xmlns="http://www.w3.org/2000/svg" style="fill: none; stroke-linecap:round; stroke-linejoin:round;"></svg>
-        <svg id="layer3" class="area" width="1280px" height="720px" xmlns="http://www.w3.org/2000/svg" style="fill: none; stroke-linecap:round; stroke-linejoin:round;"></svg>
-        <svg id="layer4" class="area" width="1280px" height="720px" xmlns="http://www.w3.org/2000/svg" style="fill: none; stroke-linecap:round; stroke-linejoin:round;"></svg>
-        <svg id="layer5" class="area" width="1280px" height="720px" xmlns="http://www.w3.org/2000/svg" style="fill: none; stroke-linecap:round; stroke-linejoin:round;"></svg>
-        <svg id="layer6" class="area" width="1280px" height="720px" xmlns="http://www.w3.org/2000/svg" style="fill: none; stroke-linecap:round; stroke-linejoin:round;"></svg>
-        <svg id="layer7" class="area" width="1280px" height="720px" xmlns="http://www.w3.org/2000/svg" style="fill: none; stroke-linecap:round; stroke-linejoin:round;"></svg>
-        <svg id="layer8" class="area" width="1280px" height="720px" xmlns="http://www.w3.org/2000/svg" style="fill: none; stroke-linecap:round; stroke-linejoin:round;"></svg>
-        <svg id="layer9" class="area" width="1280px" height="720px" xmlns="http://www.w3.org/2000/svg" style="fill: none; stroke-linecap:round; stroke-linejoin:round;"></svg>
-        <svg id="cache" class="area" width="1280px" height="720px" xmlns="http://www.w3.org/2000/svg" style="fill: none; stroke-linecap:round; stroke-linejoin:round;">
+          <mask id="layer0mask">
+            <rect x="0" y="0" width="1280" height="720" fill="white"/>
+          </mask>
+          <g id="layer0" mask="url(#layer0mask)" style="display: inline;"></g>
+          <mask id="layer1mask">
+            <rect x="0" y="0" width="1280" height="720" fill="white"/>
+          </mask>
+          <g id="layer1" mask="url(#layer1mask)" style="display: inline;"></g>
+          <mask id="layer2mask">
+            <rect x="0" y="0" width="1280" height="720" fill="white"/>
+          </mask>
+          <g id="layer2" mask="url(#layer2mask)" style="display: inline;"></g>
+          <mask id="layer3mask">
+            <rect x="0" y="0" width="1280" height="720" fill="white"/>
+          </mask>
+          <g id="layer3" mask="url(#layer3mask)" style="display: inline;"></g>
+          <mask id="layer4mask">
+            <rect x="0" y="0" width="1280" height="720" fill="white"/>
+          </mask>
+          <g id="layer4" mask="url(#layer4mask)" style="display: inline;"></g>
+          <g id="cache"></g>
         </svg>
       </div>
       <div class="option">
@@ -52,23 +61,24 @@
         <input type="button" id="redo" onclick="Redo();">
         <input type="button" value="White Pen" onclick="whitePen();">
         <input type="button" value="Back Pen"  onclick="blackPen();">
-        Layer:<span id="viewLayer"></span><input id="drowLayer" type="range" oninput="ReDrow();" min="0" max="9" step="1" value="0">
+        Layer:<span id="viewLayer"></span><input id="drowLayer" type="range" oninput="ReDrow();" min="0" max="4" step="1" value="0">
         Color:<span id="viewColor"></span><input id="drowColor" type="color" oninput="ReDrow();" value="#000000">
         Alpha:<span id="viewAlpha"></span><input id="drowAlpha" type="range" oninput="ReDrow();" min="1" max="100" step="1" value="100">
         Bold:<span id="viewBold"></span><input id="drowBold" type="range" oninput="ReDrow();" min="1" max="200" step="1" value="5">
         <input type="button" value="Clear" id="clear" onclick="AreaClear();">
       </div>
       <div class="option">
-        Layer0:<input id="layerAlpha0" type="range" min="0" max="100" value="100" data-layer="layer0" oninput="OpacityUpdate(this.dataset.layer);">
-        Layer1:<input id="layerAlpha1" type="range" min="0" max="100" value="100" data-layer="layer1" oninput="OpacityUpdate(this.dataset.layer);">
-        Layer2:<input id="layerAlpha2" type="range" min="0" max="100" value="100" data-layer="layer2" oninput="OpacityUpdate(this.dataset.layer);">
-        Layer3:<input id="layerAlpha3" type="range" min="0" max="100" value="100" data-layer="layer3" oninput="OpacityUpdate(this.dataset.layer);">
-        Layer4:<input id="layerAlpha4" type="range" min="0" max="100" value="100" data-layer="layer4" oninput="OpacityUpdate(this.dataset.layer);">
+        Layer0:<input id="layerAlpha0" type="checkbox" data-layer="layer0" checked onchange="OpacityUpdate(this.dataset.layer);">
+        Layer1:<input id="layerAlpha1" type="checkbox" data-layer="layer1" checked onchange="OpacityUpdate(this.dataset.layer);">
+        Layer2:<input id="layerAlpha2" type="checkbox" data-layer="layer2" checked onchange="OpacityUpdate(this.dataset.layer);">
+        Layer3:<input id="layerAlpha3" type="checkbox" data-layer="layer3" checked onchange="OpacityUpdate(this.dataset.layer);">
+        Layer4:<input id="layerAlpha4" type="checkbox" data-layer="layer4" checked onchange="OpacityUpdate(this.dataset.layer);">
       </div>
     </div>
   </body>
   <script>
     var info         = document.getElementById('info') //お知らせ表示
+    var layers        = document.getElementById('layers');
     var cache        = document.getElementById('cache');
     var isClicked    = 0;
     var drowLayer    = document.getElementById('drowLayer');
@@ -88,10 +98,10 @@
     const room = searchParams.get('room')
 
     // Lisner設定
-    cache.addEventListener('mousedown', function(e) {WriteStart(e.offsetX,e.offsetY)}); //マウス:書き始め
-    cache.addEventListener('mousemove', function(e) {{Writing(e.offsetX,e.offsetY)}});  //マウス:移動
+    layers.addEventListener('mousedown', function(e) {WriteStart(e.offsetX,e.offsetY)}); //マウス:書き始め
+    layers.addEventListener('mousemove', function(e) {{Writing(e.offsetX,e.offsetY)}});  //マウス:移動
     window.addEventListener('mouseup', function() {WriteEnd()});                         //マウス:書き終わり
-    cache.addEventListener('touchstart',function(e) { //タップ:書き始め
+    layers.addEventListener('touchstart',function(e) { //タップ:書き始め
       e.preventDefault();
       // 要素内におけるタッチ位置を計算
       var clientRect = this.getBoundingClientRect();
@@ -101,7 +111,7 @@
       var y = e.touches[0].pageY - positionY;
       // 書き始めを設定
       WriteStart(x,y)});
-    cache.addEventListener('touchmove',function(e) { //タップ:移動
+    layers.addEventListener('touchmove',function(e) { //タップ:移動
       // 要素内におけるタッチ位置を計算
       var clientRect = this.getBoundingClientRect();
       var positionX = clientRect.left + window.pageXOffset;
@@ -139,7 +149,7 @@
         case "delete": // 部分削除
           document.getElementById(json.data).remove();
         default:
-          console.log("Unknown: "+data[0]);
+          console.log("Unknown: "+e.data);
         }
     });
     ws.addEventListener('close', function() {//ソケットが閉じたのを入手
@@ -270,7 +280,14 @@
       dl.dispatchEvent(new MouseEvent("click"));
     };
     function OpacityUpdate(layerID) {
-      document.getElementById(layerID).style.opacity = e.value/100
+      var lay = document.getElementById(layerID)
+      console.log(layerID+","+lay.style.display)
+      if (lay.style.display == "inline") {
+        lay.style.display = "none";
+      } else {
+        lay.style.display = "inline";
+      }
+      console.log(layerID+","+lay.style.display)
     }
 
     // その他関数
@@ -291,7 +308,11 @@
     function CountLines() {
       lines = 0
       for (var i = 0; i < 10; i++) {
-        lines += document.getElementById("layer"+i).childElementCount
+        var ley = document.getElementById("layer"+i)
+        if (ley == null) {
+          break
+        }
+        lines += ley.childElementCount
       }
       if (lines > 1000) {
         return true
