@@ -78,9 +78,10 @@
   </body>
   <script>
     var info         = document.getElementById('info') //お知らせ表示
-    var layers        = document.getElementById('layers');
+    var layers       = document.getElementById('layers');
     var cache        = document.getElementById('cache');
-    var isClicked    = 0;
+    var isClicked    = false;
+    var isEraser     = false
     var drowLayer    = document.getElementById('drowLayer');
     var drowColor    = document.getElementById('drowColor');
     var drowAlpha    = document.getElementById('drowAlpha');
@@ -158,9 +159,9 @@
 
     // Listener関数
     function WriteStart(x,y) {
-      if (isClicked != 0 || CountLines()) {return false};
+      if ( isClicked || CountLines()) {return false};
       console.log("Write Start");
-      isClicked = 1;
+      isClicked = true;
       alpha = drowAlpha.value / 100;
       uuid = UUID();
       var line = document.getElementById("drowingLine");
@@ -181,9 +182,9 @@
       line.setAttribute('d',`${nowPath} L${x},${y}`);
     }
     function WriteEnd() {
-      if (isClicked == 0) {return};
+      if (!isClicked) {return};
       console.log("Write End");
-      isClicked = 0;
+      isClicked = false;
       var line = document.getElementById(uuid);
       if (line == null) {
         cache.innerHTML = `<path d="M0,0" id="drowingLine" style="stroke-width: 0px; stroke: 0; opacity: 0;"></path><path d="M0,0" id="mouse"></path>`
@@ -200,7 +201,11 @@
         cache.innerHTML = `<path d="M0,0" id="drowingLine" style="stroke-width: 0px; stroke: 0; opacity: 0;"></path><path d="M0,0" id="mouse"></path>`
         return
       }
-      document.getElementById("layer"+drowLayer.value).insertBefore(line,null);
+      layerID = "layer"+drowLayer.value
+      if (isEraser) {
+        layerID = layerID+"mask"
+      }
+      document.getElementById(layerID).insertBefore(line,null);
       cache.innerHTML = `<path d="M0,0" id="drowingLine" style="stroke-width: 0px; stroke: 0; opacity: 0;"></path><path d="M0,0" id="mouse"></path>`;
       ws.send(JSON.stringify({ type: "append", layer:"layer"+drowLayer.value,data:line.outerHTML}))
       writeCache.push(uuid);
@@ -238,15 +243,8 @@
       }
       ReDrow();
     }
-    function whitePen() {
-      drowColor.value = "#FFFFFF";
-      drowBold.value = "50";
-      ReDrow();
-    };
-    function blackPen() {
-      drowColor.value = "#000000";
-      drowBold.value = "5";
-      ReDrow();
+    function Eraser() {
+      isEraser = !isEraser
     };
     function AreaClear() {//削除
       for (var i = 0; i < 10; i++) {
