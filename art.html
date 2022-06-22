@@ -298,11 +298,9 @@
     }
     function SetMask(layerID,element) {
       var id = element.getAttribute('id')
-      console.log(id)
       var masks = document.getElementById("masks")
       var mask = `<mask id="${id}">${masks.innerHTML}`+element.outerHTML+"</mask>"
       masks.innerHTML = mask
-      console.log(mask)
 
       var lay = document.getElementById(layerID).children
       for (var i = 0;i < lay.length; i++) {
