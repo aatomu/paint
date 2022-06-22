@@ -38,7 +38,9 @@
           <g id="layer2" style="display: inline;"></g>
           <g id="layer3" style="display: inline;"></g>
           <g id="layer4" style="display: inline;"></g>
-          <defs id="masks"></defs>
+          <defs id="masks">
+            <rect x="0" y="0" width="1280" height="720" fill="white"></rect>
+          </defs>
           <g id="cache"></g>
         </svg>
       </div>
@@ -121,8 +123,7 @@
           return;
         case "eraser": //消しゴム
           document.getElementById("masks").innerHTML += "\n"+ json.data
-          var id = str2HTML(json.data).getAttribute("id")
-          SetMask(json.layer,id)
+          SetMask(json.layer,str2HTML(json.data))
           console.log("Eraser Line: "+json.layer);
           return;
         case "end":// 読み込み終了
@@ -197,13 +198,10 @@
         document.getElementById("layer"+drowLayer.value).insertBefore(line,null);
         ws.send(JSON.stringify({type: "append", layer:"layer"+drowLayer.value, data: line.outerHTML}))
       } else {
-        line.removeAttribute("id")
         line.style.stroke = "#000000"
         line.style.opacity = "1"
-        var mask = `<mask id="${uuid}"><rect x="0" y="0" width="1280" height="720" fill="white"></rect>`+line.outerHTML+"</mask>"
-        document.getElementById("masks").innerHTML += "\n"+mask
-        SetMask("layer"+drowLayer.value,uuid)
-        ws.send(JSON.stringify({type: "eraser", layer:"layer"+drowLayer.value, data: mask}))
+        SetMask("layer"+drowLayer.value,line)
+        ws.send(JSON.stringify({type: "eraser", layer:"layer"+drowLayer.value, data: line.outerHTML}))
       }
       cache.innerHTML = `<path d="M0,0" id="drowingLine" style="stroke-width: 0px; stroke: 0; opacity: 0;"></path><path d="M0,0" id="mouse"></path>`;
       writeCache.push(uuid);
@@ -243,6 +241,11 @@
     }
     function Eraser() {
       isEraser = !isEraser
+      document.getElementById("drowColor").disabled = isEraser
+      document.getElementById("drowColor").value = "#ffffff"
+      document.getElementById("drowAlpha").disabled = isEraser
+      document.getElementById("drowAlpha").value = 100
+      ReDrow()
     };
     function AreaClear() {//削除
       for (var i = 0; i < 10; i++) {
@@ -291,7 +294,13 @@
       }
       console.log(layerID+","+lay.style.display)
     }
-    function SetMask(layerID,id) {
+    function SetMask(layerID,element) {
+      var id = element.getAttribute("id")
+      var masks = document.getElementById("masks")
+      var mask = `<mask id="${id}">${masks.innerHTML}`+element.outerHTML+"</mask>"
+      masks.innerHTML = mask
+      console.log(masks.innerHTML)
+
       var lay = document.getElementById(layerID).children
       for (var i = 0;i < lay.length; i++) {
         var masks = lay[i].getAttribute('mask')
@@ -308,7 +317,7 @@
       document.getElementById('undo').value = "Undo("+writeCache.length+")";
       document.getElementById('redo').value = "Redo("+undoCache.length+")";
       document.getElementById('viewLayer').innerText = drowLayer.value;
-      document.getElementById('viewColor').innerText = drowColor.value;
+      document.getElementById('viewColor').innerText = drowColor.value.toUpperCase();
       document.getElementById('viewAlpha').innerText = drowAlpha.value.padStart(3,"0")+"%";
       document.getElementById('viewBold').innerText = drowBold.value.padStart(3,"0");
     }
