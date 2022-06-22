@@ -38,9 +38,7 @@
           <g id="layer2" style="display: inline;"></g>
           <g id="layer3" style="display: inline;"></g>
           <g id="layer4" style="display: inline;"></g>
-          <defs id="masks">
-            <rect x="0" y="0" width="1280" height="720" fill="white"></rect>
-          </defs>
+          <defs id="masks"></defs>
           <g id="cache"></g>
         </svg>
       </div>
@@ -122,7 +120,6 @@
           console.log("Append Line: "+json.layer);
           return;
         case "eraser": //消しゴム
-          document.getElementById("masks").innerHTML += "\n"+ json.data
           SetMask(json.layer,str2HTML(json.data))
           console.log("Eraser Line: "+json.layer);
           return;
@@ -299,8 +296,12 @@
     function SetMask(layerID,element) {
       var id = element.getAttribute('id')
       var masks = document.getElementById("masks")
-      var mask = `<mask id="${id}">${masks.innerHTML}`+element.outerHTML+"</mask>"
-      masks.innerHTML = mask
+      var oldMasks = ""
+      for (var i = 0; i < masks.children.length;i++) {
+        oldMasks += masks.children[i].lastChild.outerHTML
+      }
+      var mask = `<mask id="${id}"><rect x="0" y="0" width="1280" height="720" fill="white"></rect>${oldMasks}`+element.outerHTML+"</mask>"
+      masks.innerHTML += "\n" + mask
 
       var lay = document.getElementById(layerID).children
       for (var i = 0;i < lay.length; i++) {
