@@ -136,6 +136,7 @@
           for (var i = 0; i < 10; i++) {
             document.getElementById("layer"+i).innerHTML = ""
           }
+          document.getElementById("masks").innerHTML = `<rect x="0" y="0" width="1280" height="720" fill="white"></rect>`
           writeCache=[];
           undoCache=[];
           console.log("Clear");
@@ -255,6 +256,7 @@
         }
         lay.innerHTML = ""
       }
+      document.getElementById("masks").innerHTML = `<rect x="0" y="0" width="1280" height="720" fill="white"></rect>`
       writeCache=[];
       undoCache=[];
       ws.send(JSON.stringify({ type: "clear", layer:"",data:""}));
@@ -295,21 +297,18 @@
       console.log(layerID+","+lay.style.display)
     }
     function SetMask(layerID,element) {
-      var id = element.getAttribute("id")
+      var id = element.getAttribute('id')
+      console.log(id)
       var masks = document.getElementById("masks")
       var mask = `<mask id="${id}">${masks.innerHTML}`+element.outerHTML+"</mask>"
       masks.innerHTML = mask
-      console.log(masks.innerHTML)
+      console.log(mask)
 
       var lay = document.getElementById(layerID).children
       for (var i = 0;i < lay.length; i++) {
-        var masks = lay[i].getAttribute('mask')
-        if (masks == null) {
-          lay[i].setAttribute('mask',`url(#${id})`)
-          continue
-        }
-        lay[i].setAttribute('mask',`${masks},url(#${id})`)
+        lay[i].setAttribute('mask',`url(#${id})`)
       }
+      return
     }
 
     // その他関数
