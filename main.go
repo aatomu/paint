@@ -133,21 +133,16 @@ func WebSocketResponse(ws *websocket.Conn) {
 		json.Unmarshal([]byte(str), &jsonData)
 		// 表示
 		go func() {
+			for _, socket := range roomData.Websockets {
+				if socket != ws {
+					websocket.Message.Send(socket, str)
+				}
+			}
 			switch jsonData.Type {
 			case "append", "eraser":
 				roomData.Jsons = append(roomData.Jsons, str)
-				for _, socket := range roomData.Websockets {
-					if socket != ws {
-						websocket.Message.Send(socket, str)
-					}
-				}
 			case "clear":
 				roomData.Jsons = []string{}
-				for _, socket := range roomData.Websockets {
-					if socket != ws {
-						websocket.Message.Send(socket, jsonData.Data)
-					}
-				}
 			case "delete":
 				dummyJsons := []string{}
 				for _, Json := range roomData.Jsons {
@@ -157,11 +152,6 @@ func WebSocketResponse(ws *websocket.Conn) {
 					dummyJsons = append(dummyJsons, Json)
 				}
 				roomData.Jsons = dummyJsons
-				for _, socket := range roomData.Websockets {
-					if socket != ws {
-						websocket.Message.Send(socket, str)
-					}
-				}
 			}
 			if len(roomData.Jsons)%10 == 0 {
 				atomicgo.WriteFileBaffer(Save+room+".txt", []byte(Array2String(roomData.Jsons)), 0666)

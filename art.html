@@ -131,9 +131,11 @@
           return;
         case "clear": // 全削除
           for (var i = 0; i < 10; i++) {
-            document.getElementById("layer"+i).innerHTML = ""
+            if (document.getElementById("layer"+i).innerHTML != null) {
+              document.getElementById("layer"+i).innerHTML = '';
+            }
           }
-          document.getElementById("masks").innerHTML = `<rect x="0" y="0" width="1280" height="720" fill="white"></rect>`
+          document.getElementById("masks").innerHTML = '';
           writeCache=[];
           undoCache=[];
           console.log("Clear");
