@@ -157,6 +157,11 @@ func WebSocketResponse(ws *websocket.Conn) {
 					dummyJsons = append(dummyJsons, Json)
 				}
 				roomData.Jsons = dummyJsons
+				for _, socket := range roomData.Websockets {
+					if socket != ws {
+						websocket.Message.Send(socket, str)
+					}
+				}
 			}
 			if len(roomData.Jsons)%10 == 0 {
 				atomicgo.WriteFileBaffer(Save+room+".txt", []byte(Array2String(roomData.Jsons)), 0666)

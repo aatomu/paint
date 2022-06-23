@@ -140,6 +140,8 @@
           return;
         case "delete": // 部分削除
           document.getElementById(json.data).remove();
+          console.log("Delete Line: "+json.data);
+          return
         default:
           console.log("Unknown: "+e.data);
         }
@@ -220,7 +222,7 @@
         if (line != null) {
           undoCache.push(JSON.stringify({layer:line.parentNode.id,data:line.outerHTML}))
           line.remove();
-        ws.send(JSON.stringify({ type: "delete", layer:"",data:line.id}))
+          ws.send(JSON.stringify({ type: "delete", layer:"",data:line.id}))
         }
       }
       ReDrow();
