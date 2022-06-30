@@ -146,7 +146,7 @@ func WebSocketResponse(ws *websocket.Conn) {
 			case "delete":
 				dummyJsons := []string{}
 				for _, Json := range roomData.Jsons {
-					if strings.Contains(Json, `id="`+jsonData.Data+`"`) {
+					if strings.Contains(Json, jsonData.Data) {
 						continue
 					}
 					dummyJsons = append(dummyJsons, Json)
