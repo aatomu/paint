@@ -33,8 +33,10 @@ type WebSocketRes struct {
 func main() {
 	defer func() {
 		for room, roomData := range Rooms {
-			log.Println("Data Saving Room:" + room)
-			atomicgo.WriteFileBaffer(Save+room+".txt", []byte(Array2String(roomData.Jsons)), 0666)
+			if len(roomData.Jsons) > 0 {
+				log.Println("Data Saving Room:" + room)
+				atomicgo.WriteFileBaffer(Save+room+".txt", []byte(Array2String(roomData.Jsons)), 0666)
+			}
 		}
 	}()
 	// 移動
@@ -152,6 +154,8 @@ func WebSocketResponse(ws *websocket.Conn) {
 					dummyJsons = append(dummyJsons, Json)
 				}
 				roomData.Jsons = dummyJsons
+			case "save":
+				atomicgo.WriteFileBaffer(Save+room+".txt", []byte(Array2String(roomData.Jsons)), 0666)
 			}
 			if len(roomData.Jsons)%10 == 0 {
 				atomicgo.WriteFileBaffer(Save+room+".txt", []byte(Array2String(roomData.Jsons)), 0666)
