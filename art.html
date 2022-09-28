@@ -169,9 +169,11 @@
     }
     function Writing(x,y) {
       var mouse = document.getElementById('mouse');
-      mouse.setAttribute('d',`M${x},${y} L${x},${y}`);
+      mouse.setAttribute('d',`M${x},${y} L${x+1},${y+1}`);
       alpha = drowAlpha.value / 100
       mouse.setAttribute('style',`stroke-width: ${drowBold.value}px; stroke: ${drowColor.value}; opacity: ${alpha}`);
+      mouse.setAttribute('stroke-linecap',"round");
+      mouse.setAttribute('stroke-linejoin',"round");
       if(!isClicked) {return false};
       console.log("Writing");
       // マウス移動処理
