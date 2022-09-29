@@ -2,13 +2,20 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
+	"image"
+	"image/png"
 	"log"
 	"net/http"
+	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/atomu21263/atomicgo"
+	"github.com/srwiley/oksvg"
+	"github.com/srwiley/rasterx"
 	"golang.org/x/net/websocket"
 )
 
@@ -50,6 +57,7 @@ func main() {
 	}
 	// アクセス先
 	http.HandleFunc("/", HttpResponse)
+	http.HandleFunc("/photo.png", NowPaint)
 	http.Handle("/websocket", websocket.Handler(WebSocketResponse))
 	// Web鯖 起動
 	go func() {
@@ -72,11 +80,15 @@ func HttpResponse(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Println("Access:", r.RemoteAddr, "Room:", room)
 	bytes, _ := atomicgo.ReadFile("./art.html")
-	w.Write(bytes)
-	if !atomicgo.CheckFile(Save + room + ".txt") {
-		atomicgo.CreateFile(Save + room + ".txt")
-		log.Println("Create SaveData:", Save+room+".txt")
+	str := string(bytes)
+	roomData, ok := Rooms[room]
+	if ok {
+		str = atomicgo.StringReplace(str, fmt.Sprintf("%d", len(roomData.Websockets)), "{Connect}")
+	} else {
+		str = atomicgo.StringReplace(str, "0", "{Connect}")
 	}
+	str = atomicgo.StringReplace(str, fmt.Sprintf("http:/%s/photo.png?room=%s&date=%d", r.Host, room, time.Now().Unix()), "{HeadURL}")
+	w.Write([]byte(str))
 	if _, ok := Rooms[room]; !ok {
 		s, _ := atomicgo.ReadFile(Save + room + ".txt")
 		jsons := strings.Split(string(s), "\n")
@@ -88,6 +100,24 @@ func HttpResponse(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// 現在のを表示
+func NowPaint(w http.ResponseWriter, r *http.Request) {
+	room := r.URL.Query().Get("room")
+	if room == "" {
+		return
+	}
+
+	roomData, ok := Rooms[room]
+	if ok {
+		go makePng(roomData.Jsons, room)
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/octet-stream")
+	image, _ := os.ReadFile("./image/" + room + ".png")
+	w.Write(image)
+}
+
+// ウェブソケット処理
 func WebSocketResponse(ws *websocket.Conn) {
 	var err error
 	defer func() {
@@ -133,6 +163,11 @@ func WebSocketResponse(ws *websocket.Conn) {
 		log.Println("Catch: Room:", room, "Data:", atomicgo.StringCut(str, 100)+"...")
 		var jsonData WebSocketRes
 		json.Unmarshal([]byte(str), &jsonData)
+		// ファイルチェック
+		if !atomicgo.CheckFile(Save + room + ".txt") {
+			atomicgo.CreateFile(Save + room + ".txt")
+			log.Println("Create SaveData:", Save+room+".txt")
+		}
 		// 表示
 		go func() {
 			for _, socket := range roomData.Websockets {
@@ -169,4 +204,50 @@ func Array2String(sArray []string) (s string) {
 		s += "\n" + svg
 	}
 	return
+}
+
+func makePng(jsons []string, roomName string) {
+	var jsonData WebSocketRes
+
+	layer0, layer1, layer2, layer3, layer4 := "", "", "", "", ""
+	for _, str := range jsons {
+		json.Unmarshal([]byte(str), &jsonData)
+		if jsonData.Type != "append" {
+			continue
+		}
+		switch jsonData.Layer {
+		case "layer0":
+			layer0 += jsonData.Data + "\n"
+		case "layer1":
+			layer1 += jsonData.Data + "\n"
+		case "layer2":
+			layer2 += jsonData.Data + "\n"
+		case "layer3":
+			layer3 += jsonData.Data + "\n"
+		case "layer4":
+			layer4 += jsonData.Data + "\n"
+		}
+	}
+
+	svg := `` +
+		"<svg id=\"layers\" class=\"area\" width=\"1280px\" height=\"720px\" xmlns=\"http://www.w3.org/2000/svg\" style=\"fill: none;\">\n" +
+		"	<rect x=\"0\" y=\"0\" width=\"1280\" height=\"720\" fill=\"white\"/>\n" +
+		"	<g id=\"layer0\" style=\"display: inline;\">" + layer0 + "</g>\n" +
+		"	<g id=\"layer1\" style=\"display: inline;\">" + layer1 + "</g>\n" +
+		"	<g id=\"layer2\" style=\"display: inline;\">" + layer2 + "</g>\n" +
+		"	<g id=\"layer3\" style=\"display: inline;\">" + layer3 + "</g>\n" +
+		"	<g id=\"layer4\" style=\"display: inline;\">" + layer4 + "</g>\n" +
+		"</svg>"
+
+	readerSVG := strings.NewReader(svg)
+	icon, _ := oksvg.ReadIconStream(readerSVG)
+	width, height := 1280, 720
+	icon.SetTarget(0, 0, float64(width), float64(height))
+	rgba := image.NewRGBA(image.Rect(0, 0, width, height))
+	icon.Draw(rasterx.NewDasher(width, height, rasterx.NewScannerGV(width, height, rgba, rgba.Bounds())), 1)
+
+	f, _ := os.Create("./image/" + roomName + ".png")
+	defer f.Close()
+	png.Encode(f, rgba)
+	log.Println("Update: ./image/" + roomName + ".png")
 }

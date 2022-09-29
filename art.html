@@ -1,8 +1,11 @@
 <!DOCTYPE html>
 <html>
-  <head>
+  <head prefix="og: http://ogp.me/ns#">
     <meta charset="utf-8">
     <title>お絵描き</title>
+    <meta name="description" content="{Connect}人がお絵描き中? お部屋の中身↓(表示されない際は時間をおいてください)">
+    <meta id="image" name="og:image" content="{HeadURL}">
+    <meta name="twitter:card" content="summary_large_image" />
     <style>
       body {
         text-align: center;
@@ -59,6 +62,7 @@
         <label>Layer2:<input id="layerAlpha2" type="checkbox" data-layer="layer2" checked onchange="LayerHidden(this.dataset.layer);"></label>
         <label>Layer3:<input id="layerAlpha3" type="checkbox" data-layer="layer3" checked onchange="LayerHidden(this.dataset.layer);"></label>
         <label>Layer4:<input id="layerAlpha4" type="checkbox" data-layer="layer4" checked onchange="LayerHidden(this.dataset.layer);"></label>
+        <input id="" type="button" value="Share URL" onclick="SetClipBoard();"><input id="URLtext" type="text" value="" readonly/>
       </div>
     </div>
   </body>
@@ -302,25 +306,15 @@
       }
       console.log(layerID+","+lay.style.display)
     }
-    function SetMask(layerID,element) {
-      var id = element.getAttribute('id')
-      var masks = document.getElementById("masks")
-      for (var i = 0; i < masks.children.length;i++) {
-        if (masks.children[i].dataset.layer == layerID) {
-          masks.children[i].innerHTML += element.outerHTML
-        }
-      }
-      masks.innerHTML += "\n" + `<mask id="${id}mask" data-layer="${layerID}"><rect x="0" y="0" width="1280" height="720" fill="white"></rect>`+element.outerHTML+"</mask>"
-
-      var lay = document.getElementById(layerID).children
-      for (var i = 0;i < lay.length; i++) {
-        if (lay[i].getAttribute('mask') == null) {
-          lay[i].setAttribute('mask',`url(#${id}mask)`)
-        }
-      }
-      return
+    function SetClipBoard() {
+      // 中身を設定
+      var url = loc.href + "&uid="+Math.floor(16**8 * Math.random()).toString(16);
+      document.getElementById("URLtext").value = url
+      // 文字をすべて選択
+      document.getElementById("URLtext").select();
+      // コピー
+      document.execCommand("copy");
     }
-
     // その他関数
     function ReDrow() {
       document.getElementById('undo').value = "Undo("+writeCache.length+")";
@@ -360,6 +354,24 @@
       } else {
         return false;
       }
+    }
+    function SetMask(layerID,element) {
+      var id = element.getAttribute('id')
+      var masks = document.getElementById("masks")
+      for (var i = 0; i < masks.children.length;i++) {
+        if (masks.children[i].dataset.layer == layerID) {
+          masks.children[i].innerHTML += element.outerHTML
+        }
+      }
+      masks.innerHTML += "\n" + `<mask id="${id}mask" data-layer="${layerID}"><rect x="0" y="0" width="1280" height="720" fill="white"></rect>`+element.outerHTML+"</mask>"
+
+      var lay = document.getElementById(layerID).children
+      for (var i = 0;i < lay.length; i++) {
+        if (lay[i].getAttribute('mask') == null) {
+          lay[i].setAttribute('mask',`url(#${id}mask)`)
+        }
+      }
+      return
     }
 
     // 初期化
