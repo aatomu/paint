@@ -27,8 +27,9 @@ var (
 )
 
 type Room struct {
-	Jsons      []string
-	Websockets map[int]*websocket.Conn
+	Jsons        []string
+	Websockets   map[int]*websocket.Conn
+	isUpUpdating bool
 }
 
 type WebSocketRes struct {
@@ -108,9 +109,13 @@ func NowPaint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	roomData, ok := Rooms[room]
-	if ok {
-		go makePng(roomData.Jsons, room)
-	}
+	go func(r *Room) {
+		if ok && !roomData.isUpUpdating {
+			roomData.isUpUpdating = true
+			go makePng(roomData.Jsons, room)
+			roomData.isUpUpdating = false
+		}
+	}(roomData)
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/octet-stream")
 	image, _ := os.ReadFile("./image/" + room + ".png")
