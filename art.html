@@ -141,7 +141,7 @@
           document.getElementById("main").style.display = "inline";
           isLoading = false;
           info.innerHTML = "";
-          cache.innerHTML = `<path d="M0,0" id="drowingLine" stroke-linecap="round" stroke-linejoin="round" style="stroke-width: 0px; stroke: 0; opacity: 0;"></path><path d="M0,0" id="mouse"></path>`
+          cache.innerHTML = `<path d="M0,0" id="drowingLine" stroke-linecap="round" stroke-linejoin="round" style="stroke-width: 0px; stroke: 0; opacity: 0;"></path><path d="M0,0" stroke-linecap="round" stroke-linejoin="round" id="mouse"></path>`
           console.log("Cache: end");
           return;
         case "clear": // 全削除
@@ -187,8 +187,6 @@
       mouse.setAttribute('d',`M${x},${y} L${x+1},${y+1}`);
       alpha = drowAlpha.value / 100
       mouse.setAttribute('style',`stroke-width: ${drowBold.value}px; stroke: ${drowColor.value}; opacity: ${alpha}`);
-      mouse.setAttribute('stroke-linecap',"round");
-      mouse.setAttribute('stroke-linejoin',"round");
       if(!isClicked) {return false};
       console.log("Writing");
       // マウス移動処理
@@ -202,7 +200,7 @@
       isClicked = false;
       var line = document.getElementById(uuid);
       if (line == null) {
-        cache.innerHTML = `<path d="M0,0" id="drowingLine" stroke-linecap="round" stroke-linejoin="round" style="stroke-width: 0px; stroke: 0; opacity: 0;"></path><path d="M0,0" id="mouse"></path>`
+        cache.innerHTML = `<path d="M0,0" id="drowingLine" stroke-linecap="round" stroke-linejoin="round" style="stroke-width: 0px; stroke: 0; opacity: 0;"></path><path d="M0,0" stroke-linecap="round" stroke-linejoin="round" id="mouse"></path>`
         return
       };
       if (line.outerHTML.match(/L/g) == null) {// 移動してない場合
@@ -213,7 +211,7 @@
             inline: "center"
           })
         }
-        cache.innerHTML = `<path d="M0,0" id="drowingLine" stroke-linecap="round" stroke-linejoin="round" style="stroke-width: 0px; stroke: 0; opacity: 0;"></path><path d="M0,0" id="mouse"></path>`
+        cache.innerHTML = `<path d="M0,0" id="drowingLine" stroke-linecap="round" stroke-linejoin="round" style="stroke-width: 0px; stroke: 0; opacity: 0;"></path><path d="M0,0" stroke-linecap="round" stroke-linejoin="round" id="mouse"></path>`
         return
       }
       if (!isEraser) {
@@ -225,7 +223,7 @@
         SetMask("layer"+drowLayer.value,line)
         ws.send(JSON.stringify({type: "eraser", layer:"layer"+drowLayer.value, data: line.outerHTML}))
       }
-      cache.innerHTML = `<path d="M0,0" id="drowingLine" stroke-linecap="round" stroke-linejoin="round" style="stroke-width: 0px; stroke: 0; opacity: 0;"></path><path d="M0,0" id="mouse"></path>`;
+      cache.innerHTML = `<path d="M0,0" id="drowingLine" stroke-linecap="round" stroke-linejoin="round" style="stroke-width: 0px; stroke: 0; opacity: 0;"></path><path d="M0,0" stroke-linecap="round" stroke-linejoin="round" id="mouse"></path>`;
       writeCache.push(uuid);
       undoCache = [];
       ReDrow();
