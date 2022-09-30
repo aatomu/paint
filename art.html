@@ -3,6 +3,7 @@
   <head prefix="og: http://ogp.me/ns#">
     <meta charset="utf-8">
     <title>お絵描き</title>
+    <link id="icon" rel="icon" type="image/svg" href="">
     <meta name="description" content="{Connect}人がお絵描き中? お部屋の中身↓(表示されない際は時間をおいてください)">
     <meta id="image" name="og:image" content="{HeadURL}">
     <meta name="twitter:card" content="summary_large_image" />
@@ -140,6 +141,7 @@
         case "end":// 読み込み終了
           document.getElementById("main").style.display = "inline";
           isLoading = false;
+          UpDateFavicon();
           info.innerHTML = "";
           cache.innerHTML = `<path d="M0,0" id="drowingLine" stroke-linecap="round" stroke-linejoin="round" style="stroke-width: 0px; stroke: 0; opacity: 0;"></path><path d="M0,0" stroke-linecap="round" stroke-linejoin="round" id="mouse"></path>`
           console.log("Cache: end");
@@ -233,6 +235,7 @@
       writeCache.push(uuid);
       undoCache = [];
       ReDrow();
+      UpDateFavicon();
       if (CountLines()) {
         info.innerHTML = "書き込み上限に達しました。";
       } else {
@@ -418,7 +421,12 @@
       }
       return
     }
+    function UpDateFavicon() {
+      var svg = document.getElementById("layers")
+      var svgData = new XMLSerializer().serializeToString(svg);
+      document.getElementById("icon").href="data:image/svg+xml;charset=utf-8;base64," + btoa(unescape(encodeURIComponent(svgData)))
 
+    }
     // 初期化
     document.title = 'お絵描き 部屋:'+room
     ReDrow();
