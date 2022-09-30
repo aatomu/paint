@@ -172,7 +172,12 @@
 
     // Listener関数
     function WriteStart(x,y) {
-      if ( isClicked || CountLines()) {return false};
+      if ( isClicked ) {return false};
+      if (CountLines()) {
+        info.innerHTML = "書き込み上限に達しました。";
+      } else {
+        info.innerHTML = "";
+      }
       console.log("Write Start");
       isClicked = true;
       alpha = drowAlpha.value / 100;
