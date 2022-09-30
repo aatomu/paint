@@ -175,6 +175,7 @@
       if ( isClicked ) {return false};
       if (CountLines()) {
         info.innerHTML = "書き込み上限に達しました。";
+        return false;
       } else {
         info.innerHTML = "";
       }
