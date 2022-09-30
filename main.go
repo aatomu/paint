@@ -91,9 +91,12 @@ func HttpResponse(w http.ResponseWriter, r *http.Request) {
 	str = atomicgo.StringReplace(str, fmt.Sprintf("http:/%s/photo.png?room=%s&date=%d", r.Host, room, time.Now().Unix()), "{HeadURL}")
 	w.Write([]byte(str))
 	if _, ok := Rooms[room]; !ok {
-		s, _ := atomicgo.ReadFile(Save + room + ".txt")
-		jsons := strings.Split(string(s), "\n")
-		log.Println("Load SaveData:", Save+room+".txt")
+		jsons := []string{}
+		if atomicgo.CheckFile(Save + room + ".txt") {
+			s, _ := atomicgo.ReadFile(Save + room + ".txt")
+			jsons = strings.Split(string(s), "\n")
+			log.Println("Load SaveData:", Save+room+".txt")
+		}
 		Rooms[room] = &Room{
 			Jsons:      jsons,
 			Websockets: map[int]*websocket.Conn{},
