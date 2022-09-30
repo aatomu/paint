@@ -54,7 +54,7 @@
         Alpha: <span id="viewAlpha"></span><input id="drowAlpha" type="range" oninput="ReDrow();" min="1" max="100" step="1" value="100">
         Bold: <span id="viewBold"></span><input id="drowBold" type="range" oninput="ReDrow();" min="1" max="200" step="1" value="5">
         <input type="button" value="Clear" onclick="AreaClear();">
-        DL: <input type="button" value="png" onclick="downloadPNG();"> <input type="button" value="svg" onclick="downloadSVG();">
+        DL: <input type="button" value="png" onclick="downloadPNG();"> <input type="button" value="svg" onclick="downloadSVG();"> <input type="button" value="ico" onclick="downloadIco();">
       </div>
       <div class="option">
         <label>Layer0:<input id="layerAlpha0" type="checkbox" data-layer="layer0" checked onchange="LayerHidden(this.dataset.layer);"></label>
@@ -281,6 +281,8 @@
       ws.send(JSON.stringify({ type: "clear", layer:"",data:""}));
     };
     function downloadPNG() {// DL
+      var mouse = document.getElementById('mouse').style
+      mouse.opacity = 0
       var svg = document.getElementById("layers")
       var svgData = new XMLSerializer().serializeToString(svg);
       var canvas = document.createElement("canvas");
@@ -295,15 +297,40 @@
         dl.href = canvas.toDataURL("image/jpg");
         dl.setAttribute("download", "image.jpg");
         dl.dispatchEvent(new MouseEvent("click"));
+        mouse.opacity = 1
       }
     };
     function downloadSVG() {// DL
+      var mouse = document.getElementById('mouse')
+      mouse.opacity = 0
       var svg = document.getElementById("layers")
       var svgData = new XMLSerializer().serializeToString(svg);
       var dl = document.createElement("a");
       dl.href = "data:image/svg+xml;charset=utf-8;base64," + btoa(unescape(encodeURIComponent(svgData)))
       dl.setAttribute("download", "image.svg");
       dl.dispatchEvent(new MouseEvent("click"));
+      mouse.opacity = 1
+    };
+    function downloadIco() {// DL
+      var mouse = document.getElementById('mouse').style
+      mouse.opacity = 0
+      var svg = document.getElementById("layers")
+      var svgData = new XMLSerializer().serializeToString(svg);
+      var canvas = document.createElement("canvas");
+      canvas.width = 48;
+      canvas.height = 48;
+      var ctx = canvas.getContext("2d");
+      ctx.scale(0.06,0.06)
+      var image = new Image;
+      image.src = "data:image/svg+xml;charset=utf-8;base64," + btoa(unescape(encodeURIComponent(svgData)));
+      image.onload = function(){
+        ctx.drawImage( image, -180, 0 );
+        var dl = document.createElement("a");
+        dl.href = canvas.toDataURL("image/ico");
+        dl.setAttribute("download", "image.ico");
+        dl.dispatchEvent(new MouseEvent("click"));
+        mouse.opacity = 1
+      }
     };
     function LayerHidden(layerID) {
       var lay = document.getElementById(layerID)
