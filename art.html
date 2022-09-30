@@ -35,7 +35,7 @@
     <div id="main" style="display: none;">
       <div class="lock" id="lock">
         <svg id="layers" class="area" width="1280px" height="720px" xmlns="http://www.w3.org/2000/svg" style="fill: none;">
-          <rect x="0" y="0" width="1280" height="720" fill="white"/>
+          <rect x="0" y="0" width="1280" height="720" fill="white" id="background"/>
           <g id="layer0" style="display: inline;"></g>
           <g id="layer1" style="display: inline;"></g>
           <g id="layer2" style="display: inline;"></g>
@@ -314,6 +314,8 @@
     function downloadIco() {// DL
       var mouse = document.getElementById('mouse').style
       mouse.opacity = 0
+      var back = document.getElementById('background').style
+      back.opacity = 0
       var svg = document.getElementById("layers")
       var svgData = new XMLSerializer().serializeToString(svg);
       var canvas = document.createElement("canvas");
@@ -330,6 +332,7 @@
         dl.setAttribute("download", "image.ico");
         dl.dispatchEvent(new MouseEvent("click"));
         mouse.opacity = 1
+        back.opacity = 1
       }
     };
     function LayerHidden(layerID) {
