@@ -83,6 +83,7 @@ func HttpResponse(w http.ResponseWriter, r *http.Request) {
 	bytes, _ := atomicgo.ReadFile("./art.html")
 	str := string(bytes)
 	roomData, ok := Rooms[room]
+	str = atomicgo.StringReplace(str, room, "{Room}")
 	if ok {
 		str = atomicgo.StringReplace(str, fmt.Sprintf("%d", len(roomData.Websockets)), "{Connect}")
 	} else {
