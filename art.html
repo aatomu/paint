@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <title>お絵描き 部屋:{Room}</title>
     <link id="icon" rel="icon" type="image/svg" href="">
-    <meta name="description" content="{Connect}人がお絵描き中? お部屋の中身↓(表示されない際は時間をおいてください)">
+    <meta name="description" content="{ Connect}人がお絵描き中? お部屋の中身↓(表示されない際は時間をおいてください)">
     <meta id="image" name="og:image" content="{HeadURL}">
     <meta name="twitter:card" content="summary_large_image" />
     <style>
@@ -27,6 +27,13 @@
         -ms-transform: translate(-50%, -50%);
         border: solid 5px #000;
         box-sizing: border-box;
+      }
+      .hover {
+        animation: blinking 1s ease-in-out infinite alternate;
+      }
+      @keyframes blinking {
+        0% {opacity: 0;}
+        100% {opacity: 1;}
       }
     </style>
   </head>
@@ -72,6 +79,7 @@
     var layers       = document.getElementById('layers');
     var cache        = document.getElementById('cache');
     var isClicked    = false;
+    var uuid         = 0;
     var isEraser     = false
     var drowLayer    = document.getElementById('drowLayer');
     var drowColor    = document.getElementById('drowColor');
@@ -123,8 +131,30 @@
       json = JSON.parse(e.data)
       switch (json.type) {
         case "append":// 読み込み
-          document.getElementById(json.layer).innerHTML += "\n"+ json.data
-          console.log("Append Line: "+json.layer);
+          var layer = document.getElementById(json.layer);
+          var line = str2HTML(json.data);
+          var lineDate = +Infinity;
+          if (!isNaN(line.id)) {
+            lineDate = parseInt(line.id);
+          }
+          var isPlaced = false;
+
+          for (var i=0;i<layer.childElementCount;i++) {
+            var nowLine = layer.children[i];
+            if (isNaN(nowLine.id)) { continue;};
+
+            if (parseInt(nowLine.id,10) > lineDate) {
+              layer.insertBefore(line,layer.children[i]);
+              layer.innerHTML += "";
+              isPlaced = true;
+              console.log("Insert Line: "+json.layer);
+              break;
+            }
+          }
+          if (!isPlaced) {
+            layer.innerHTML += "\n" +json.data;
+            console.log("Append Line: "+json.layer);
+          }
           if (isLoading) {
             loadedLines++;
             info.innerHTML = `Now Loading... (${loadedLines}Lines)`;
@@ -158,12 +188,9 @@
           console.log("Clear");
           return;
         case "delete": // 部分削除
-          document.getElementById(json.data).remove();
-          if (document.getElementById(json.data+"mask") != null) {
-            document.getElementById(json.data+"mask").remove();
-          }
-          console.log("Delete Line: "+json.data);
-          return
+        var line = str2HTML(json.data);
+        document.getElementById(line.id).remove();
+        console.log("Delete Line: "+json.data);
         default:
           console.log("Unknown: "+e.data);
         }
@@ -174,7 +201,8 @@
 
     // Listener関数
     function WriteStart(x,y) {
-      if ( isClicked ) {return false};
+      if ( isClicked ) { return false };
+      if ( isEraser ) { return false};
       if (CountLines()) {
         info.innerHTML = "書き込み上限に達しました。";
         return false;
@@ -184,18 +212,34 @@
       console.log("Write Start");
       isClicked = true;
       alpha = drowAlpha.value / 100;
-      uuid = UUID();
       var line = document.getElementById("drowingLine");
+      uuid = new Date().getTime();
       line.setAttribute('id',uuid);
       line.setAttribute('d',`M${x},${y}`);
-      line.setAttribute('style',`stroke-width: ${drowBold.value}px; stroke: ${drowColor.value}; opacity: ${alpha};`);
+      line.setAttribute('style',`stroke-width: ${drowBold.value }px; stroke: ${drowColor.value }; opacity: ${alpha};`);
     }
     function Writing(x,y) {
+      // カーソル表示
       var mouse = document.getElementById('mouse');
       mouse.setAttribute('d',`M${x},${y} L${x+1},${y+1}`);
       alpha = drowAlpha.value / 100
-      mouse.setAttribute('style',`stroke-width: ${drowBold.value}px; stroke: ${drowColor.value}; opacity: ${alpha}`);
-      if(!isClicked) {return false};
+      mouse.setAttribute('style',`stroke-width: ${drowBold.value }px; stroke: ${drowColor.value }; opacity: ${alpha}`);
+      // 点滅
+      if (isEraser) {
+        var elements = document.getElementsByTagName("path");
+        Array.prototype.forEach.call(elements,e => {
+          e.classList.remove("hover")
+        })
+        var e = document.elementsFromPoint(x,y);
+        for (var i=0;i<e.length;i++) {
+          if (e[i].tagName != "path") { continue };
+          if (e[i].parentElement.id != "layer"+drowLayer.value) { continue };
+          e[i].classList.add("hover");
+          break;
+        };
+      }
+      // 書き込み
+      if(!isClicked) { return false };
       console.log("Writing");
       // マウス移動処理
       var line = document.getElementById(uuid);
@@ -203,7 +247,20 @@
       line.setAttribute('d',`${nowPath} L${x},${y}`);
     }
     function WriteEnd() {
-      if (!isClicked) {return};
+      if (isEraser) {
+        var elements = document.getElementsByClassName("hover");
+        if (elements.length != 1) { return };
+
+        var line = elements[0];
+        line.removeAttribute("class");
+        ws.send(JSON.stringify({type: "delete", layer:"layer"+drowLayer.value, data: line.outerHTML}))
+        writeCache.push(line.id);
+        line.remove();
+
+        ReDrow();
+        return;
+      }
+      if (!isClicked) { return };
       console.log("Write End");
       isClicked = false;
       var line = document.getElementById(uuid);
@@ -222,15 +279,9 @@
         cache.innerHTML = `<path d="M0,0" id="drowingLine" stroke-linecap="round" stroke-linejoin="round" style="stroke-width: 0px; stroke: 0; opacity: 0;"></path><path d="M0,0" stroke-linecap="round" stroke-linejoin="round" id="mouse"></path>`
         return
       }
-      if (!isEraser) {
-        document.getElementById("layer"+drowLayer.value).insertBefore(line,null);
-        ws.send(JSON.stringify({type: "append", layer:"layer"+drowLayer.value, data: line.outerHTML}))
-      } else {
-        line.style.stroke = "#000000"
-        line.style.opacity = "1"
-        SetMask("layer"+drowLayer.value,line)
-        ws.send(JSON.stringify({type: "eraser", layer:"layer"+drowLayer.value, data: line.outerHTML}))
-      }
+      document.getElementById("layer"+drowLayer.value).insertBefore(line,null);
+      ws.send(JSON.stringify({type: "append", layer:"layer"+drowLayer.value, data: line.outerHTML}))
+
       cache.innerHTML = `<path d="M0,0" id="drowingLine" stroke-linecap="round" stroke-linejoin="round" style="stroke-width: 0px; stroke: 0; opacity: 0;"></path><path d="M0,0" stroke-linecap="round" stroke-linejoin="round" id="mouse"></path>`;
       writeCache.push(uuid);
       undoCache = [];
@@ -245,35 +296,54 @@
 
     // 呼び出し関数
     function Undo() { //1つ戻す
-      if (writeCache.length > 0) {
-        var del = writeCache.splice(-1,1)
-        var line = document.getElementById(del)
-        if (line != null) {
-          undoCache.push(JSON.stringify({layer:line.parentNode.id,data:line.outerHTML}))
-          line.remove();
-          ws.send(JSON.stringify({ type: "delete", layer:"",data:line.id}))
-        }
+      if (writeCache.length < 1) { return };
+
+      var del = writeCache.splice(-1,1)
+      var line = document.getElementById(del)
+      if (line != null) {
+        undoCache.push(JSON.stringify({layer:line.parentNode.id,data:line.outerHTML}))
+        line.remove();
+        ws.send(JSON.stringify({ type: "delete", layer:"",data:line.id}))
       }
       ReDrow();
     }
     function Redo() { //1つ進む
-      if (undoCache.length > 0) {
-        var add = undoCache.splice(-1,1)
-        if (add != null) {
-          json = JSON.parse(add)
-          document.getElementById(json.layer).innerHTML += "\n"+json.data
-          writeCache.push(str2HTML(json.data).id)
-          ws.send(JSON.stringify({ type: "append", layer:json.layer,data:json.data}))
+      if (undoCache.length < 1) { return };
+
+      var add = undoCache.splice(-1,1);
+      var json = JSON.parse(add)
+      var layer = document.getElementById(json.layer);
+      var line = str2HTML(json.data);
+      var lineDate = +Infinity;
+      if (!isNaN(line.id)) {
+        lineDate = parseInt(line.id);
+      }
+      var isPlaced = false;
+
+      for (var i=0;i<layer.childElementCount;i++) {
+        var nowLine = layer.children[i];
+        if (isNaN(nowLine.id)) { continue;};
+
+        if (parseInt(nowLine.id,10) > lineDate) {
+          layer.insertBefore(line,layer.children[i]);
+          layer.innerHTML += "";
+          isPlaced = true;
+          break;
         }
       }
+      if (!isPlaced) {
+        layer.innerHTML += "\n" +json.data;
+      }
+      writeCache.push(line.id)
+      ws.send(JSON.stringify({ type: "append", layer:json.layer,data:json.data}))
+
       ReDrow();
     }
     function Eraser() {
       isEraser = !isEraser
       document.getElementById("drowColor").disabled = isEraser
-      document.getElementById("drowColor").value = "#ffffff"
       document.getElementById("drowAlpha").disabled = isEraser
-      document.getElementById("drowAlpha").value = 100
+      document.getElementById("drowBold").disabled = isEraser
       ReDrow()
     };
     function AreaClear() {//削除
@@ -372,12 +442,6 @@
       document.getElementById('viewAlpha').innerText = drowAlpha.value.padStart(3,"0")+"%";
       document.getElementById('viewBold').innerText = drowBold.value.padStart(3,"0");
     }
-    function UUID() {
-      var A = Math.floor(16**8 * Math.random()).toString(16);
-      var B = Math.floor(16**8 * Math.random()).toString(16);
-      var C = Math.floor(16**8 * Math.random()).toString(16);
-      return A+B+C;
-    }
     function CountLines() {
       lines = 0
       for (var i = 0; i < 10; i++) {
@@ -387,7 +451,7 @@
         }
         lines += ley.childElementCount
       }
-      if (lines > 1000) {
+      if (lines > 2000) {
         return true
       }
     }

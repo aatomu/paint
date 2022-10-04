@@ -192,7 +192,8 @@ func WebSocketResponse(ws *websocket.Conn) {
 			case "delete":
 				dummyJsons := []string{}
 				for _, Json := range roomData.Jsons {
-					if strings.Contains(Json, jsonData.Data) {
+					if strings.Contains(Json, fmt.Sprintf("%#v", jsonData.Data)) {
+						fmt.Println("Success Delete.")
 						continue
 					}
 					dummyJsons = append(dummyJsons, Json)
@@ -210,6 +211,9 @@ func WebSocketResponse(ws *websocket.Conn) {
 
 func Array2String(sArray []string) (s string) {
 	for _, svg := range sArray {
+		if svg == "" {
+			continue
+		}
 		s += "\n" + svg
 	}
 	return
