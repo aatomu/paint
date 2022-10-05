@@ -29,7 +29,7 @@
         box-sizing: border-box;
       }
       .hover {
-        animation: blinking 1s ease-in-out infinite alternate;
+        animation: blinking 0.25s ease-in-out infinite alternate;
       }
       @keyframes blinking {
         0% {opacity: 0;}
@@ -101,7 +101,7 @@
 
     // Lisner設定
     layers.addEventListener('mousedown', function(e) {WriteStart(e.offsetX,e.offsetY)}); //マウス:書き始め
-    layers.addEventListener('mousemove', function(e) {{Writing(e.offsetX,e.offsetY)}});  //マウス:移動
+    layers.addEventListener('mousemove', function(e) {{Writing(e,e.offsetX,e.offsetY)}});  //マウス:移動
     window.addEventListener('mouseup', function() {WriteEnd()});                         //マウス:書き終わり
     layers.addEventListener('touchstart',function(e) { //タップ:書き始め
       e.preventDefault();
@@ -121,7 +121,7 @@
       var x = e.touches[0].pageX - positionX;
       var y = e.touches[0].pageY - positionY;
       // 書き始めを設定
-      Writing(x,y);
+      Writing(e,x,y);
     });
     window.addEventListener('touchend',function() {WriteEnd()});//タップ:書き終わり
     ws.addEventListener('open',function() {//ソケットが開いたらroomを送信
@@ -218,7 +218,7 @@
       line.setAttribute('d',`M${x},${y}`);
       line.setAttribute('style',`stroke-width: ${drowBold.value }px; stroke: ${drowColor.value }; opacity: ${alpha};`);
     }
-    function Writing(x,y) {
+    function Writing(e,x,y) {
       // カーソル表示
       var mouse = document.getElementById('mouse');
       mouse.setAttribute('d',`M${x},${y} L${x+1},${y+1}`);
@@ -226,17 +226,28 @@
       mouse.setAttribute('style',`stroke-width: ${drowBold.value }px; stroke: ${drowColor.value }; opacity: ${alpha}`);
       // 点滅
       if (isEraser) {
+        // hoverチェック用のを削除
         var elements = document.getElementsByTagName("path");
         Array.prototype.forEach.call(elements,e => {
-          e.classList.remove("hover")
+          delete e.dataset.isHover
         })
-        var e = document.elementsFromPoint(x,y);
+
+        // hoverチェック
+        var e = document.elementsFromPoint(e.clientX,e.clientY);
         for (var i=0;i<e.length;i++) {
           if (e[i].tagName != "path") { continue };
           if (e[i].parentElement.id != "layer"+drowLayer.value) { continue };
           e[i].classList.add("hover");
+          e[i].dataset.isHover = true
           break;
         };
+
+        // 要らないhoverを削除
+        Array.prototype.forEach.call(elements,e => {
+          if (!e.dataset.isHover) {
+            e.classList.remove("hover")
+          }
+        })
       }
       // 書き込み
       if(!isClicked) { return false };
