@@ -193,7 +193,6 @@ func WebSocketResponse(ws *websocket.Conn) {
 				dummyJsons := []string{}
 				for _, Json := range roomData.Jsons {
 					if strings.Contains(Json, jsonData.Data) {
-						fmt.Println("Success Delete.")
 						continue
 					}
 					dummyJsons = append(dummyJsons, Json)
