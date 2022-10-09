@@ -160,13 +160,9 @@
             info.innerHTML = `Now Loading... (${loadedLines}Lines)`;
           }
           return;
-        case "eraser": //消しゴム
-          SetMask(json.layer,str2HTML(json.data))
-          console.log("Eraser Line: "+json.layer);
-          if (isLoading) {
-            loadedLines++;
-            info.innerHTML = `Now Loading... (${loadedLines}Lines)`;
-          }
+        case "delete": //消しゴム
+          document.getElementById(json.data).remove;
+          console.log("Delete Line: "+json.data);
           return;
         case "end":// 読み込み終了
           document.getElementById("main").style.display = "inline";
@@ -187,10 +183,6 @@
           undoCache=[];
           console.log("Clear");
           return;
-        case "delete": // 部分削除
-        var line = str2HTML(json.data);
-        document.getElementById(line.id).remove();
-        console.log("Delete Line: "+json.data);
         default:
           console.log("Unknown: "+e.data);
         }
@@ -265,7 +257,7 @@
         var line = elements[0];
         line.removeAttribute("class");
         ws.send(JSON.stringify({type: "delete", layer:"", data: line.id}))
-        writeCache.push(line.id);
+        undoCache.push(JSON.stringify({layer:line.parentNode.id,data:line.outerHTML}))
         line.remove();
 
         ReDrow();
