@@ -2,3 +2,5 @@
 rooms/*
 # プレビュー画像
 image/*
+# vscode
+.history
