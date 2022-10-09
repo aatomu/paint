@@ -192,7 +192,7 @@ func WebSocketResponse(ws *websocket.Conn) {
 			case "delete":
 				dummyJsons := []string{}
 				for _, Json := range roomData.Jsons {
-					if strings.Contains(Json, fmt.Sprintf("%#v", jsonData.Data)) {
+					if strings.Contains(Json, jsonData.Data) {
 						fmt.Println("Success Delete.")
 						continue
 					}

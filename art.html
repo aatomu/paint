@@ -264,7 +264,7 @@
 
         var line = elements[0];
         line.removeAttribute("class");
-        ws.send(JSON.stringify({type: "delete", layer:"layer"+drowLayer.value, data: line.outerHTML}))
+        ws.send(JSON.stringify({type: "delete", layer:"", data: line.id}))
         writeCache.push(line.id);
         line.remove();
 
