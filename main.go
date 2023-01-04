@@ -108,7 +108,9 @@ func HttpResponse(w http.ResponseWriter, r *http.Request) {
 	if !isRoomEnable {
 		file, _ := os.ReadFile(Save + roomID + ".json")
 		Room := RoomInfo{
-			Limit: 1000,
+			Limit:        1000,
+			Websockets:   []*websocket.Conn{},
+			isUpUpdating: false,
 		}
 		json.Unmarshal(file, &Room)
 		log.Println("Load SaveData:", Save+roomID+".json")
@@ -161,6 +163,7 @@ func WebSocketResponse(ws *websocket.Conn) {
 		}
 		websocket.Message.Send(ws, svg)
 	}
+	websocket.Message.Send(ws, fmt.Sprintf(`{"type":"info","layer":"%d","data":"line_max"}`, roomData.Limit))
 	websocket.Message.Send(ws, `{"type":"end","layer":"","data":""}`)
 
 	// 相互通信
@@ -176,13 +179,13 @@ func WebSocketResponse(ws *websocket.Conn) {
 		json.Unmarshal([]byte(str), &jsonData)
 
 		// ファイルチェック
-		if _, err := os.Stat(Save + roomID + ".txt"); err != nil {
-			os.Create(Save + roomID + ".txt")
-			log.Println("Create:", Save+roomID+".txt")
+		if _, err := os.Stat(Save + roomID + ".json"); err != nil {
+			os.Create(Save + roomID + ".json")
+			log.Println("Create:", Save+roomID+".json")
 		}
 
 		// 表示
-		go func(roomIDFunc string) {
+		go func() {
 			// ほかのに送信
 			for _, socket := range roomData.Websockets {
 				if socket != ws {
@@ -191,7 +194,7 @@ func WebSocketResponse(ws *websocket.Conn) {
 			}
 			switch jsonData.Type {
 			case "append", "eraser":
-				if len(roomData.Jsons) > roomData.Limit {
+				if len(roomData.Jsons) >= roomData.Limit {
 					websocket.Message.Send(ws, `{"type":"info","layer":"","data":"line_limit"}`)
 					lineID := atomicgo.StringReplace(jsonData.Data, "$1", `.*id=\"([0-9]+)\".*`)
 					websocket.Message.Send(ws, fmt.Sprintf(`{"type":"delete","layer":"","data":"%s"}`, lineID))
@@ -218,14 +221,37 @@ func WebSocketResponse(ws *websocket.Conn) {
 			case "save":
 				saveJson(roomID)
 			case "limit":
-				roomData.Limit, _ = strconv.Atoi(jsonData.Data)
+				// 切り分け
+				data := strings.Split(jsonData.Data, ",")
+				if len(data) < 2 {
+					websocket.Message.Send(ws, `{"type":"info","layer":"","data":"input_unmatch"}`)
+					break
+				}
+				// パスワード設定
+				if roomData.Password == "" {
+					roomData.Password = data[0]
+				}
+				// 変更
+				if roomData.Password == data[0] {
+					limit, err := strconv.Atoi(data[1])
+					if err != nil {
+						websocket.Message.Send(ws, `{"type":"info","layer":"","data":"input_unmatch"}`)
+						break
+					}
+					roomData.Limit = limit
+					for _, socket := range roomData.Websockets {
+						websocket.Message.Send(socket, fmt.Sprintf(`{"type":"info","layer":"%d","data":"line_max"}`, limit))
+					}
+				} else {
+					websocket.Message.Send(ws, `{"type":"info","layer":"","data":"input_unmatch"}`)
+				}
 			}
 			// 自動セーブ
 			if len(roomData.Jsons)%50 == 0 {
 				saveJson(roomID)
 			}
-			log.Println("Catch:  Room:", roomIDFunc, "Data:", atomicgo.StringCut(str, 100)+"...")
-		}(roomID)
+			log.Println("Catch:  Room:", roomID, "Data:", atomicgo.StringCut(str, 100)+"...")
+		}()
 	}
 }
 
@@ -296,5 +322,5 @@ func saveJson(roomID string) {
 	writer := bufio.NewWriter(jsonFile)
 	writer.Write(bytes)
 	writer.Flush()
-	log.Println("Save:", Save+roomID+".txt")
+	log.Println("Save:", Save+roomID+".json")
 }

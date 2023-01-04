@@ -71,7 +71,8 @@
         <label>Layer3:<input id="layerAlpha3" type="checkbox" data-layer="layer3" checked onchange="LayerHidden(this.dataset.layer);"></label>
         <label>Layer4:<input id="layerAlpha4" type="checkbox" data-layer="layer4" checked onchange="LayerHidden(this.dataset.layer);"></label>
         <input type="button" value="Share URL" onclick="SetClipBoard();"><input id="URLtext" type="text" value="" readonly/>
-        <input type="button" value="UpdateLimit" onclick="UpDateLimit();"><input id="LineLimit" type="text" placeholder="Password,Limit"/>
+        <input type="button" value="ChangeLimit" onclick="ChangeLimit();"><input id="LineLimit" type="text" placeholder="Password,Limit"/>
+        Used: <span id="usedLine"></span>
       </div>
     </div>
   </body>
@@ -80,7 +81,8 @@
     var layers       = document.getElementById('layers');
     var cache        = document.getElementById('cache');
     var isClicked    = false;
-    var isLimit    = false;
+    var isLimit      = false;
+    var LineLimit    = 0;
     var uuid         = 0;
     var isEraser     = false
     var drowLayer    = document.getElementById('drowLayer');
@@ -164,6 +166,8 @@
             loadedLines++;
             info.innerHTML = `Now Loading... (${loadedLines}Lines)`;
           }
+          UpDateLineInfo();
+          UpDateFavicon();
           return;
         case "delete": //消しゴム
           document.getElementById(json.data).remove();
@@ -189,15 +193,29 @@
           console.log("Clear");
           return;
         case "info": //サバからの通知
-          if (json.data == "line_limit") {
+          switch (json.data) {
+            case "line_limit":
+              console.log("Line is Limited")
               info.innerHTML = "書き込み上限に達しました。";
               isLimit = true
-          }
-          if (json.data == "line_unlimit") {
+              return
+            case "line_unlimit":
+              console.log("Line is UnLimited")
               info.innerHTML = "";
               isLimit = false
-          }
-          return;
+              return
+            case "line_max":
+              console.log("Line is UpdateLimit")
+              LineLimit = json.layer
+              isLimit = false
+              UpDateLineInfo()
+              return
+            case "input_unmatch":
+              console.log("Input Is UnMatch")
+              info.innerHTML = "入力が誤っています";
+              return
+            }
+          return
         default:
           console.log("Unknown: "+e.data);
         }
@@ -260,6 +278,9 @@
       line.setAttribute('d',`${nowPath} L${x},${y}`);
     }
     function WriteEnd() {
+      if (!isLimit) {
+        info.innerText = "";
+      }
       if (isEraser) {
         var elements = document.getElementsByClassName("hover");
         if (elements.length != 1) { return };
@@ -299,6 +320,7 @@
       writeCache.push(uuid);
       undoCache = [];
       ReDrow();
+      UpDateLineInfo();
       UpDateFavicon();
     }
 
@@ -441,7 +463,22 @@
       // コピー
       document.execCommand("copy");
     }
-    // その他関数
+    function ChangeLimit() { // Limitを修正
+      var data = document.getElementById("LineLimit").value
+      ws.send(JSON.stringify({type: "limit", layer:"", data: data}))
+    }
+    function UpDateLineInfo() {
+      var lines = 0
+      for (var i = 0; i < 5; i++) {
+        var ley = document.getElementById("layer"+i)
+        if (ley == null) {
+          break
+        }
+        lines += ley.childElementCount
+      }
+      document.getElementById("usedLine").innerText = `${lines}/${LineLimit}`
+    }
+      // その他関数
     function ReDrow() {
       document.getElementById('undo').value = "Undo("+writeCache.length+")";
       document.getElementById('redo').value = "Redo("+undoCache.length+")";
