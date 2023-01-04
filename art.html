@@ -79,6 +79,7 @@
     var layers       = document.getElementById('layers');
     var cache        = document.getElementById('cache');
     var isClicked    = false;
+    var isLimit    = false;
     var uuid         = 0;
     var isEraser     = false
     var drowLayer    = document.getElementById('drowLayer');
@@ -183,6 +184,16 @@
           undoCache=[];
           console.log("Clear");
           return;
+        case "info": //サバからの通知
+          if (json.data == "line_limit") {
+              info.innerHTML = "書き込み上限に達しました。";
+              isLimit = true
+          }
+          if (json.data == "line_unlimit") {
+              info.innerHTML = "";
+              isLimit = false
+          }
+          return;
         default:
           console.log("Unknown: "+e.data);
         }
@@ -195,12 +206,7 @@
     function WriteStart(x,y) {
       if ( isClicked ) { return false };
       if ( isEraser ) { return false};
-      if (CountLines()) {
-        info.innerHTML = "書き込み上限に達しました。";
-        return false;
-      } else {
-        info.innerHTML = "";
-      }
+      if ( isLimit ) { return false};
       console.log("Write Start");
       isClicked = true;
       alpha = drowAlpha.value / 100;
@@ -290,11 +296,6 @@
       undoCache = [];
       ReDrow();
       UpDateFavicon();
-      if (CountLines()) {
-        info.innerHTML = "書き込み上限に達しました。";
-      } else {
-        info.innerHTML = "";
-      }
     }
 
     // 呼び出し関数
@@ -444,19 +445,6 @@
       document.getElementById('viewColor').innerText = drowColor.value.toUpperCase();
       document.getElementById('viewAlpha').innerText = drowAlpha.value.padStart(3,"0")+"%";
       document.getElementById('viewBold').innerText = drowBold.value.padStart(3,"0");
-    }
-    function CountLines() {
-      lines = 0
-      for (var i = 0; i < 10; i++) {
-        var ley = document.getElementById("layer"+i)
-        if (ley == null) {
-          break
-        }
-        lines += ley.childElementCount
-      }
-      if (lines > 2000) {
-        return true
-      }
     }
     function str2HTML(html) {
       const dummyElement = document.createElement('div');

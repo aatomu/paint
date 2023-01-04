@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"image"
@@ -21,15 +22,16 @@ import (
 
 var (
 	Listen = ":25300"
-	Rooms  = map[string]*Room{}
-	Count  = 0
+	Rooms  = map[string]*RoomInfo{}
 	Save   = atomicgo.GetGoDir() + "rooms/"
 )
 
-type Room struct {
-	Jsons        []string
-	Websockets   map[int]*websocket.Conn
-	isUpUpdating bool
+type RoomInfo struct {
+	Password     string            `json:"password"`
+	Limit        int               `json:"limit"`
+	Jsons        []string          `json:"jsons"`
+	Websockets   []*websocket.Conn `json:"-"`
+	isUpUpdating bool              `json:"-"`
 }
 
 type WebSocketRes struct {
@@ -40,10 +42,11 @@ type WebSocketRes struct {
 
 func main() {
 	defer func() {
-		for room, roomData := range Rooms {
+		for roomID, roomData := range Rooms {
 			if len(roomData.Jsons) > 0 {
-				log.Println("Data Saving Room:" + room)
-				atomicgo.WriteFileBaffer(Save+room+".txt", []byte(Array2String(roomData.Jsons)), 0666)
+				saveJson(roomID)
+			} else {
+				os.Remove(Save + roomID + ".json")
 			}
 		}
 	}()
@@ -74,111 +77,104 @@ func main() {
 
 // ページ表示
 func HttpResponse(w http.ResponseWriter, r *http.Request) {
-	room := r.URL.Query().Get("room")
-	if room == "" {
+	// RoomID取得
+	roomID := r.URL.Query().Get("room")
+	// IDがなかったらエラーを返す
+	if roomID == "" {
 		w.Write([]byte("<body style=\"text-align: center;\"><h1>Unknown Room</h1>\nPlease Access " + r.Host + "/?room=&lt;RoomName&gt;</body>"))
 		return
 	}
-	log.Println("Access:", r.RemoteAddr, "Room:", room)
-	bytes, _ := atomicgo.ReadFile("./art.html")
-	str := string(bytes)
-	roomData, ok := Rooms[room]
-	str = atomicgo.StringReplace(str, room, "{Room}")
-	if ok {
-		str = atomicgo.StringReplace(str, fmt.Sprintf("%d", len(roomData.Websockets)), "{Connect}")
+
+	// アクセスログ
+	log.Println("Access:", r.RemoteAddr, "Room:", roomID)
+
+	// 読み込み
+	bytes, _ := os.ReadFile("./art.html")
+	indexHTML := string(bytes)
+	roomData, isRoomEnable := Rooms[roomID]
+	// 変数書き換え
+	indexHTML = strings.ReplaceAll(indexHTML, "{Room}", roomID)
+	if isRoomEnable {
+		indexHTML = strings.ReplaceAll(indexHTML, "{Connect}", fmt.Sprintf("%d", len(roomData.Websockets)))
 	} else {
-		str = atomicgo.StringReplace(str, "0", "{Connect}")
+		indexHTML = strings.ReplaceAll(indexHTML, "{Connect}", "0")
 	}
-	str = atomicgo.StringReplace(str, fmt.Sprintf("http:/%s/photo.png?room=%s&date=%d", r.Host, room, time.Now().Unix()), "{HeadURL}")
-	w.Write([]byte(str))
-	if _, ok := Rooms[room]; !ok {
-		jsons := []string{}
-		if atomicgo.CheckFile(Save + room + ".txt") {
-			s, _ := atomicgo.ReadFile(Save + room + ".txt")
-			jsons = strings.Split(string(s), "\n")
-			log.Println("Load SaveData:", Save+room+".txt")
-		}
-		Rooms[room] = &Room{
-			Jsons:      jsons,
-			Websockets: map[int]*websocket.Conn{},
-		}
+	indexHTML = strings.ReplaceAll(indexHTML, "{HeadURL}", fmt.Sprintf("http:/%s/photo.png?room=%s&date=%d", r.Host, roomID, time.Now().Unix()))
+	// 送信
+	w.Write([]byte(indexHTML))
+
+	// 部屋作成
+	if !isRoomEnable {
+		file, _ := os.ReadFile(Save + roomID + ".json")
+		var Room RoomInfo
+		json.Unmarshal(file, &Room)
+		log.Println("Load SaveData:", Save+roomID+".json")
+		Rooms[roomID] = &Room
 	}
 }
 
 // 現在のを表示
 func NowPaint(w http.ResponseWriter, r *http.Request) {
-	room := r.URL.Query().Get("room")
-	if room == "" {
+	roomID := r.URL.Query().Get("room")
+	if roomID == "" {
 		return
 	}
 
-	roomData, ok := Rooms[room]
-	go func(r *Room) {
-		if ok && !roomData.isUpUpdating {
+	go func(roomIDFunc string) {
+		roomData, isRoomEnable := Rooms[roomIDFunc]
+		if isRoomEnable && !roomData.isUpUpdating {
 			roomData.isUpUpdating = true
-			go makePng(roomData.Jsons, room)
+			makePng(roomData.Jsons, roomIDFunc)
 			roomData.isUpUpdating = false
 		}
-	}(roomData)
+	}(roomID)
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/octet-stream")
-	image, _ := os.ReadFile("./image/" + room + ".png")
+	image, _ := os.ReadFile("./image/" + roomID + ".png")
 	w.Write(image)
 }
 
 // ウェブソケット処理
 func WebSocketResponse(ws *websocket.Conn) {
-	var err error
 	defer func() {
 		ws.Close()
 	}()
 
 	// Socket保存用
-	room := ""
-	websocket.Message.Receive(ws, &room)
-	log.Println("WebSocket:", ws.RemoteAddr(), "Room:", room)
-	pos := Count
-	Count++
-	roomData := Rooms[room]
-	roomData.Websockets[pos] = ws
-	defer func() {
-		delete(roomData.Websockets, pos)
-	}()
+	roomID := ""
+	websocket.Message.Receive(ws, &roomID)
+	log.Println("WebSocket:", ws.RemoteAddr(), "Room:", roomID)
+	roomData := Rooms[roomID]
+	roomData.Websockets = append(roomData.Websockets, ws)
+	pos := len(roomData.Websockets) - 1
+	defer func(posFunc int) {
+		roomData.Websockets = append(roomData.Websockets[:posFunc], roomData.Websockets[posFunc+1:]...)
+	}(pos)
 
 	// 今までのデータを転送
 	for _, svg := range roomData.Jsons {
-		if svg == "" {
-			continue
-		}
-		err = websocket.Message.Send(ws, svg)
-		if err != nil {
-			return
-		}
+		websocket.Message.Send(ws, svg)
 	}
-	err = websocket.Message.Send(ws, `{"type":"end","layer":"","data":""}`)
-	if err != nil {
-		return
-	}
+	websocket.Message.Send(ws, `{"type":"end","layer":"","data":""}`)
 
 	// 相互通信
 	for {
 		// 受信
 		str := ""
-		err := websocket.Message.Receive(ws, &str)
-		if err != nil {
-			return
-		}
+		websocket.Message.Receive(ws, &str)
 		// 受信データ
-		log.Println("Catch: Room:", room, "Data:", atomicgo.StringCut(str, 100)+"...")
 		var jsonData WebSocketRes
 		json.Unmarshal([]byte(str), &jsonData)
+
 		// ファイルチェック
-		if !atomicgo.CheckFile(Save + room + ".txt") {
-			atomicgo.CreateFile(Save + room + ".txt")
-			log.Println("Create SaveData:", Save+room+".txt")
+		if _, err := os.Stat(Save + roomID + ".txt"); err != nil {
+			os.Create(Save + roomID + ".txt")
+			log.Println("Create:", Save+roomID+".txt")
 		}
+
 		// 表示
-		go func() {
+		go func(roomIDFunc string) {
+			// ほかのに送信
 			for _, socket := range roomData.Websockets {
 				if socket != ws {
 					websocket.Message.Send(socket, str)
@@ -186,10 +182,22 @@ func WebSocketResponse(ws *websocket.Conn) {
 			}
 			switch jsonData.Type {
 			case "append", "eraser":
+				if len(roomData.Jsons) > roomData.Limit {
+					websocket.Message.Send(ws, `{"type":"info","layer":"","data":"line_limit"}`)
+					lineID := atomicgo.StringReplace(jsonData.Data, "$1", `.*id=\"([0-9]+)\".*`)
+					websocket.Message.Send(ws, fmt.Sprintf(`{"type":"delete","layer":"","data":"%s"}`, lineID))
+					return
+				}
 				roomData.Jsons = append(roomData.Jsons, str)
 			case "clear":
+				for _, socket := range roomData.Websockets {
+					websocket.Message.Send(socket, `{"type":"info","layer":"","data":"line_unlimit"}`)
+				}
 				roomData.Jsons = []string{}
 			case "delete":
+				for _, socket := range roomData.Websockets {
+					websocket.Message.Send(socket, `{"type":"info","layer":"","data":"line_unlimit"}`)
+				}
 				dummyJsons := []string{}
 				for _, Json := range roomData.Jsons {
 					if strings.Contains(Json, jsonData.Data) {
@@ -199,12 +207,14 @@ func WebSocketResponse(ws *websocket.Conn) {
 				}
 				roomData.Jsons = dummyJsons
 			case "save":
-				atomicgo.WriteFileBaffer(Save+room+".txt", []byte(Array2String(roomData.Jsons)), 0666)
+				saveJson(roomID)
 			}
-			if len(roomData.Jsons)%10 == 0 {
-				atomicgo.WriteFileBaffer(Save+room+".txt", []byte(Array2String(roomData.Jsons)), 0666)
+			// 自動セーブ
+			if len(roomData.Jsons)%50 == 0 {
+				saveJson(roomID)
 			}
-		}()
+			log.Println("Catch:  Room:", roomIDFunc, "Data:", atomicgo.StringCut(str, 100)+"...")
+		}(roomID)
 	}
 }
 
@@ -262,4 +272,18 @@ func makePng(jsons []string, roomName string) {
 	defer f.Close()
 	png.Encode(f, rgba)
 	log.Println("Update: ./image/" + roomName + ".png")
+}
+
+func saveJson(roomID string) {
+	roomData, isRoomEnable := Rooms[roomID]
+	if !isRoomEnable {
+		return
+	}
+	bytes, _ := json.MarshalIndent(roomData, "", "  ")
+	jsonFile, _ := os.Create(Save + roomID + ".json")
+	defer jsonFile.Close()
+	writer := bufio.NewWriter(jsonFile)
+	writer.Write(bytes)
+	writer.Flush()
+	log.Println("Save:", Save+roomID+".txt")
 }
