@@ -70,7 +70,8 @@
         <label>Layer2:<input id="layerAlpha2" type="checkbox" data-layer="layer2" checked onchange="LayerHidden(this.dataset.layer);"></label>
         <label>Layer3:<input id="layerAlpha3" type="checkbox" data-layer="layer3" checked onchange="LayerHidden(this.dataset.layer);"></label>
         <label>Layer4:<input id="layerAlpha4" type="checkbox" data-layer="layer4" checked onchange="LayerHidden(this.dataset.layer);"></label>
-        <input id="" type="button" value="Share URL" onclick="SetClipBoard();"><input id="URLtext" type="text" value="" readonly/>
+        <input type="button" value="Share URL" onclick="SetClipBoard();"><input id="URLtext" type="text" value="" readonly/>
+        <input type="button" value="UpdateLimit" onclick="UpDateLimit();"><input id="LineLimit" type="text" placeholder="Password,Limit"/>
       </div>
     </div>
   </body>
@@ -129,6 +130,9 @@
       ws.send(room)
     });
     ws.addEventListener('message',async function(e) {//鯖からのデータを処理
+      if (e.data == "") {
+        return
+      }
       json = JSON.parse(e.data)
       switch (json.type) {
         case "append":// 読み込み

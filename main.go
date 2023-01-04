@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
@@ -106,7 +107,9 @@ func HttpResponse(w http.ResponseWriter, r *http.Request) {
 	// 部屋作成
 	if !isRoomEnable {
 		file, _ := os.ReadFile(Save + roomID + ".json")
-		var Room RoomInfo
+		Room := RoomInfo{
+			Limit: 1000,
+		}
 		json.Unmarshal(file, &Room)
 		log.Println("Load SaveData:", Save+roomID+".json")
 		Rooms[roomID] = &Room
@@ -153,6 +156,9 @@ func WebSocketResponse(ws *websocket.Conn) {
 
 	// 今までのデータを転送
 	for _, svg := range roomData.Jsons {
+		if svg == "" {
+			continue
+		}
 		websocket.Message.Send(ws, svg)
 	}
 	websocket.Message.Send(ws, `{"type":"end","layer":"","data":""}`)
@@ -162,6 +168,9 @@ func WebSocketResponse(ws *websocket.Conn) {
 		// 受信
 		str := ""
 		websocket.Message.Receive(ws, &str)
+		if str == "" {
+			continue
+		}
 		// 受信データ
 		var jsonData WebSocketRes
 		json.Unmarshal([]byte(str), &jsonData)
@@ -208,6 +217,8 @@ func WebSocketResponse(ws *websocket.Conn) {
 				roomData.Jsons = dummyJsons
 			case "save":
 				saveJson(roomID)
+			case "limit":
+				roomData.Limit, _ = strconv.Atoi(jsonData.Data)
 			}
 			// 自動セーブ
 			if len(roomData.Jsons)%50 == 0 {
