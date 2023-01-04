@@ -166,8 +166,10 @@
             loadedLines++;
             info.innerHTML = `Now Loading... (${loadedLines}Lines)`;
           }
-          UpDateLineInfo();
-          UpDateFavicon();
+          if (!isLoading) {
+            UpDateLineInfo();
+            UpDateFavicon();
+          }
           return;
         case "delete": //消しゴム
           document.getElementById(json.data).remove();
