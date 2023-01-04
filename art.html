@@ -404,7 +404,7 @@
         ctx.drawImage( image, 0, 0 );
         var dl = document.createElement("a");
         dl.href = canvas.toDataURL("image/jpg");
-        dl.setAttribute("download", "image.jpg");
+        dl.setAttribute("download", `${room}_${GetDate()}.jpg`);
         dl.dispatchEvent(new MouseEvent("click"));
         mouse.opacity = 1
       }
@@ -416,7 +416,7 @@
       var svgData = new XMLSerializer().serializeToString(svg);
       var dl = document.createElement("a");
       dl.href = "data:image/svg+xml;charset=utf-8;base64," + btoa(unescape(encodeURIComponent(svgData)))
-      dl.setAttribute("download", "image.svg");
+      dl.setAttribute("download", `${room}_${GetDate()}.svg`);
       dl.dispatchEvent(new MouseEvent("click"));
       mouse.opacity = 1
     };
@@ -438,7 +438,7 @@
         ctx.drawImage( image, -180, 0 );
         var dl = document.createElement("a");
         dl.href = canvas.toDataURL("image/ico");
-        dl.setAttribute("download", "image.ico");
+        dl.setAttribute("download", `${room}_${GetDate()}.ico`);
         dl.dispatchEvent(new MouseEvent("click"));
         mouse.opacity = 1
         back.opacity = 1
@@ -522,6 +522,10 @@
       var svgData = new XMLSerializer().serializeToString(svg);
       document.getElementById("icon").href="data:image/svg+xml;charset=utf-8;base64," + btoa(unescape(encodeURIComponent(svgData)))
 
+    }
+    function GetDate() {
+      let now = new Date()
+      return `${date.getFullYear()}-${('00' + (date.getMonth() + 1)).slice(-2)}-${('00' + date.getDate()).slice(-2)}-${('00' + date.getHours()).slice(-2)}-${('00' + date.getMinutes()).slice(-2)}-${('00' + date.getSeconds()).slice(-2)}`
     }
     // 初期化
     ReDrow();
