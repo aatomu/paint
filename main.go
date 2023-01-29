@@ -166,12 +166,29 @@ func WebSocketResponse(ws *websocket.Conn) {
 	websocket.Message.Send(ws, fmt.Sprintf(`{"type":"info","layer":"%d","data":"line_max"}`, roomData.Limit))
 	websocket.Message.Send(ws, `{"type":"end","layer":"","data":""}`)
 
+	// CloseCheck
+	var isClose = false
+	go func() {
+		ticker := time.NewTicker(10 * time.Second)
+		for {
+			<-ticker.C
+			err := websocket.Message.Send(ws, ``)
+			if err != nil {
+				isClose = true
+				return
+			}
+		}
+	}()
+
 	// 相互通信
 	for {
 		// 受信
 		str := ""
 		websocket.Message.Receive(ws, &str)
 		if str == "" {
+			if isClose {
+				return
+			}
 			continue
 		}
 		// 受信データ
