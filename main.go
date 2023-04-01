@@ -22,7 +22,7 @@ import (
 )
 
 var (
-	Listen = ":81"
+	Listen = ":1025"
 	Rooms  = map[string]*RoomInfo{}
 	Save   = atomicgo.GetGoDir() + "rooms/"
 )
