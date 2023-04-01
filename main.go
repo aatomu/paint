@@ -28,11 +28,11 @@ var (
 )
 
 type RoomInfo struct {
-	Password     string            `json:"password"`
-	Limit        int               `json:"limit"`
-	Jsons        []string          `json:"jsons"`
-	Websockets   []*websocket.Conn `json:"-"`
-	isUpUpdating bool              `json:"-"`
+	Password     string                  `json:"password"`
+	Limit        int                     `json:"limit"`
+	Jsons        []string                `json:"jsons"`
+	Websockets   map[int]*websocket.Conn `json:"-"`
+	isUpUpdating bool                    `json:"-"`
 }
 
 type WebSocketRes struct {
@@ -109,7 +109,7 @@ func HttpResponse(w http.ResponseWriter, r *http.Request) {
 		file, _ := os.ReadFile(Save + roomID + ".json")
 		Room := RoomInfo{
 			Limit:        1000,
-			Websockets:   []*websocket.Conn{},
+			Websockets:   map[int]*websocket.Conn{},
 			isUpUpdating: false,
 		}
 		json.Unmarshal(file, &Room)
@@ -150,10 +150,10 @@ func WebSocketResponse(ws *websocket.Conn) {
 	websocket.Message.Receive(ws, &roomID)
 	log.Println("WebSocket:", ws.RemoteAddr(), "Room:", roomID)
 	roomData := Rooms[roomID]
-	roomData.Websockets = append(roomData.Websockets, ws)
-	pos := len(roomData.Websockets) - 1
+	pos := len(roomData.Websockets)
+	roomData.Websockets[pos] = ws
 	defer func(posFunc int) {
-		roomData.Websockets = append(roomData.Websockets[:posFunc], roomData.Websockets[posFunc+1:]...)
+		delete(roomData.Websockets, posFunc)
 	}(pos)
 
 	// 今までのデータを転送
