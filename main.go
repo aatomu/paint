@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/atomu21263/atomicgo"
+	"github.com/atomu21263/atomicgo/files"
 	"github.com/srwiley/oksvg"
 	"github.com/srwiley/rasterx"
 	"golang.org/x/net/websocket"
@@ -24,7 +25,7 @@ import (
 var (
 	Listen = ":1025"
 	Rooms  = map[string]*RoomInfo{}
-	Save   = atomicgo.GetGoDir() + "rooms/"
+	Save   = files.CurrentDir() + "rooms/"
 )
 
 type RoomInfo struct {
@@ -54,10 +55,14 @@ func main() {
 	// 移動
 	_, file, _, _ := runtime.Caller(0)
 	goDir := filepath.Dir(file) + "/"
-	atomicgo.MoveWorkDir(goDir)
+	files.SetWorkDir(goDir)
+
 	// 保存先
-	if !atomicgo.CheckFile(Save) {
-		atomicgo.CreateDir(Save, 0766)
+	if !files.IsAccess(Save) {
+		err := files.Create(Save, false)
+		if err != nil {
+			fmt.Println("Error", err)
+		}
 		log.Println("Create SaveDir:", Save)
 	}
 	// アクセス先
@@ -73,7 +78,7 @@ func main() {
 			return
 		}
 	}()
-	atomicgo.StopWait()
+	<-atomicgo.BreakSignal()
 }
 
 // ページ表示
@@ -213,7 +218,7 @@ func WebSocketResponse(ws *websocket.Conn) {
 			case "append", "eraser":
 				if len(roomData.Jsons) >= roomData.Limit {
 					websocket.Message.Send(ws, `{"type":"info","layer":"","data":"line_limit"}`)
-					lineID := atomicgo.StringReplace(jsonData.Data, "$1", `.*id=\"([0-9]+)\".*`)
+					lineID := atomicgo.RegReplace(jsonData.Data, "$1", `.*id=\"([0-9]+)\".*`)
 					websocket.Message.Send(ws, fmt.Sprintf(`{"type":"delete","layer":"","data":"%s"}`, lineID))
 					return
 				}
@@ -267,7 +272,7 @@ func WebSocketResponse(ws *websocket.Conn) {
 			if len(roomData.Jsons)%50 == 0 {
 				saveJson(roomID)
 			}
-			log.Println("Catch:  Room:", roomID, "Data:", atomicgo.StringCut(str, 100)+"...")
+			log.Println("Catch:  Room:", roomID, "Data:", atomicgo.StrCut(str, "...", 100))
 		}()
 	}
 }
