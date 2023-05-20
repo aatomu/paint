@@ -25,7 +25,7 @@ import (
 var (
 	Listen = ":1025"
 	Rooms  = map[string]*RoomInfo{}
-	Save   = files.CurrentDir() + "rooms/"
+	Save   = files.CurrentDir() + "/rooms/"
 )
 
 type RoomInfo struct {
@@ -59,7 +59,7 @@ func main() {
 
 	// 保存先
 	if !files.IsAccess(Save) {
-		err := files.Create(Save, false)
+		err := files.Create(Save, true)
 		if err != nil {
 			fmt.Println("Error", err)
 		}
