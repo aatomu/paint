@@ -15,8 +15,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/atomu21263/atomicgo"
 	"github.com/atomu21263/atomicgo/files"
+	"github.com/atomu21263/atomicgo/utils"
 	"github.com/srwiley/oksvg"
 	"github.com/srwiley/rasterx"
 	"golang.org/x/net/websocket"
@@ -78,7 +78,7 @@ func main() {
 			return
 		}
 	}()
-	<-atomicgo.BreakSignal()
+	<-utils.BreakSignal()
 }
 
 // ページ表示
@@ -218,7 +218,7 @@ func WebSocketResponse(ws *websocket.Conn) {
 			case "append", "eraser":
 				if len(roomData.Jsons) >= roomData.Limit {
 					websocket.Message.Send(ws, `{"type":"info","layer":"","data":"line_limit"}`)
-					lineID := atomicgo.RegReplace(jsonData.Data, "$1", `.*id=\"([0-9]+)\".*`)
+					lineID := utils.RegReplace(jsonData.Data, "$1", `.*id=\"([0-9]+)\".*`)
 					websocket.Message.Send(ws, fmt.Sprintf(`{"type":"delete","layer":"","data":"%s"}`, lineID))
 					return
 				}
@@ -272,7 +272,7 @@ func WebSocketResponse(ws *websocket.Conn) {
 			if len(roomData.Jsons)%50 == 0 {
 				saveJson(roomID)
 			}
-			log.Println("Catch:  Room:", roomID, "Data:", atomicgo.StrCut(str, "...", 100))
+			log.Println("Catch:  Room:", roomID, "Data:", utils.StrCut(str, "...", 100))
 		}()
 	}
 }
