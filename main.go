@@ -15,8 +15,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/atomu21263/atomicgo/files"
-	"github.com/atomu21263/atomicgo/utils"
+	"github.com/aatomu/atomicgo/files"
+	"github.com/aatomu/atomicgo/utils"
 	"github.com/srwiley/oksvg"
 	"github.com/srwiley/rasterx"
 	"golang.org/x/net/websocket"
