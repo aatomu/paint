@@ -22,8 +22,8 @@ func main() {
 
 	// Http handle
 	assets := http.FileServer(http.Dir("./assets"))
-	http.Handle("/", middleWare(assets))
-	http.Handle("/ws", middleWare(websocket.Handler(WebsocketRequest)))
+	http.Handle("/", middleware(assets))
+	http.Handle("/ws", middleware(websocket.Handler(WebsocketRequest)))
 
 	// Boot Server
 	log.Println("Http Server Boot")
@@ -34,7 +34,7 @@ func main() {
 	}
 }
 
-func middleWare(h http.Handler) http.Handler {
+func middleware(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Printf("IP:%s, Method:%s, URI:%s, Header:%v", r.RemoteAddr, r.Method, r.URL, r.Header)
 		// Compute
