@@ -1,0 +1,456 @@
+//@ts-check
+
+var info         = document.getElementById('info') //お知らせ表示
+var layers       = document.getElementById('layers');
+var cache        = document.getElementById('cache');
+var isClicked    = false;
+var isLimit      = false;
+var LineLimit    = 0;
+var uuid         = 0;
+var isEraser     = false
+var drowLayer    = document.getElementById('drowLayer');
+var drowColor    = document.getElementById('drowColor');
+var drowAlpha    = document.getElementById('drowAlpha');
+var drowBold     = document.getElementById('drowBold');
+var writeCache   = [];
+var undoCache    = [];
+let loc          = window.location;     // Websocket変数
+let uri          = 'ws:';
+if (loc.protocol === 'https:') {
+    uri = 'wss:';
+};
+uri += '//' + loc.host + loc.pathname + 'websocket';
+const ws = new WebSocket(uri);
+var loadedLines = 0;
+var isLoading = true;
+const searchParams = new URLSearchParams(window.location.search)
+const room = searchParams.get('room')
+
+// Lisner設定
+layers.addEventListener('mousedown', function(e) {WriteStart(e.offsetX,e.offsetY)}); //マウス:書き始め
+layers.addEventListener('mousemove', function(e) {{Writing(e,e.offsetX,e.offsetY)}});  //マウス:移動
+window.addEventListener('mouseup', function() {WriteEnd()});                         //マウス:書き終わり
+layers.addEventListener('touchstart',function(e) { //タップ:書き始め
+  e.preventDefault();
+  // 要素内におけるタッチ位置を計算
+  var clientRect = this.getBoundingClientRect();
+  var positionX = clientRect.left + window.pageXOffset;
+  var positionY = clientRect.top + window.pageYOffset;
+  var x = e.touches[0].pageX - positionX;
+  var y = e.touches[0].pageY - positionY;
+  // 書き始めを設定
+  WriteStart(x,y)});
+layers.addEventListener('touchmove',function(e) { //タップ:移動
+  // 要素内におけるタッチ位置を計算
+  var clientRect = this.getBoundingClientRect();
+  var positionX = clientRect.left + window.pageXOffset;
+  var positionY = clientRect.top + window.pageYOffset;
+  var x = e.touches[0].pageX - positionX;
+  var y = e.touches[0].pageY - positionY;
+  // 書き始めを設定
+  Writing(e,x,y);
+});
+window.addEventListener('touchend',function() {WriteEnd()});//タップ:書き終わり
+ws.addEventListener('open',function() {//ソケットが開いたらroomを送信
+  ws.send(room)
+});
+ws.addEventListener('message',async function(e) {//鯖からのデータを処理
+  if (e.data == "") {
+    return
+  }
+  json = JSON.parse(e.data)
+  switch (json.type) {
+    case "append":// 読み込み
+      var layer = document.getElementById(json.layer);
+      var line = str2HTML(json.data);
+      var lineDate = +Infinity;
+      if (!isNaN(line.id)) {
+        lineDate = parseInt(line.id);
+      }
+      var isPlaced = false;
+
+      for (var i=0;i<layer.childElementCount;i++) {
+        var nowLine = layer.children[i];
+        if (isNaN(nowLine.id)) { continue;};
+
+        if (parseInt(nowLine.id,10) > lineDate) {
+          layer.insertBefore(line,layer.children[i]);
+          layer.innerHTML += "";
+          isPlaced = true;
+          console.log("Insert Line: "+json.layer);
+          break;
+        }
+      }
+      if (!isPlaced) {
+        layer.innerHTML += "\n" +json.data;
+        console.log("Append Line: "+json.layer);
+      }
+      if (isLoading) {
+        loadedLines++;
+        info.innerHTML = `Now Loading... (${loadedLines}Lines)`;
+      }
+      if (!isLoading) {
+        UpDateLineInfo();
+        UpDateFavicon();
+      }
+      return;
+    case "delete": //消しゴム
+      document.getElementById(json.data).remove();
+      console.log("Delete Line: "+json.data);
+      return;
+    case "end":// 読み込み終了
+      document.getElementById("main").style.display = "inline";
+      isLoading = false;
+      UpDateFavicon();
+      info.innerHTML = "";
+      cache.innerHTML = `<path d="M0,0" id="drowingLine" stroke-linecap="round" stroke-linejoin="round" style="stroke-width: 0px; stroke: 0; opacity: 0;"></path><path d="M0,0" stroke-linecap="round" stroke-linejoin="round" id="mouse"></path>`
+      console.log("Cache: end");
+      return;
+    case "clear": // 全削除
+      for (var i = 0; i < 10; i++) {
+        if (document.getElementById("layer"+i).innerHTML != null) {
+          document.getElementById("layer"+i).innerHTML = '';
+        }
+      }
+      document.getElementById("masks").innerHTML = '';
+      writeCache=[];
+      undoCache=[];
+      console.log("Clear");
+      return;
+    case "info": //サバからの通知
+      switch (json.data) {
+        case "line_limit":
+          console.log("Line is Limited")
+          info.innerHTML = "書き込み上限に達しました。";
+          isLimit = true
+          return
+        case "line_unlimit":
+          console.log("Line is UnLimited")
+          info.innerHTML = "";
+          isLimit = false
+          return
+        case "line_max":
+          console.log("Line is UpdateLimit")
+          LineLimit = json.layer
+          isLimit = false
+          UpDateLineInfo()
+          return
+        case "input_unmatch":
+          console.log("Input Is UnMatch")
+          info.innerHTML = "入力が誤っています";
+          return
+        }
+      return
+    default:
+      console.log("Unknown: "+e.data);
+    }
+});
+ws.addEventListener('close', function() {//ソケットが閉じたのを入手
+  document.getElementById("main").innerHTML = "<h1>Connection Closed</h1><br><h1>Please Reload After</h1>";
+});
+
+// Listener関数
+function WriteStart(x,y) {
+  if ( isClicked ) { return false };
+  if ( isEraser ) { return false};
+  if ( isLimit ) { return false};
+  console.log("Write Start");
+  isClicked = true;
+  alpha = drowAlpha.value / 100;
+  var line = document.getElementById("drowingLine");
+  uuid = new Date().getTime();
+  line.setAttribute('id',uuid);
+  line.setAttribute('d',`M${x},${y}`);
+  line.setAttribute('style',`stroke-width: ${drowBold.value }px; stroke: ${drowColor.value }; opacity: ${alpha};`);
+}
+function Writing(e,x,y) {
+  // カーソル表示
+  var mouse = document.getElementById('mouse');
+  mouse.setAttribute('d',`M${x},${y} L${x+1},${y+1}`);
+  alpha = drowAlpha.value / 100
+  mouse.setAttribute('style',`stroke-width: ${drowBold.value }px; stroke: ${drowColor.value }; opacity: ${alpha}`);
+  // 点滅
+  if (isEraser) {
+    // hoverチェック用のを削除
+    var elements = document.getElementsByTagName("path");
+    Array.prototype.forEach.call(elements,e => {
+      delete e.dataset.isHover
+    })
+
+    // hoverチェック
+    var e = document.elementsFromPoint(e.clientX,e.clientY);
+    for (var i=0;i<e.length;i++) {
+      if (e[i].tagName != "path") { continue };
+      if (e[i].parentElement.id != "layer"+drowLayer.value) { continue };
+      e[i].classList.add("hover");
+      e[i].dataset.isHover = true
+      break;
+    };
+
+    // 要らないhoverを削除
+    Array.prototype.forEach.call(elements,e => {
+      if (!e.dataset.isHover) {
+        e.classList.remove("hover")
+      }
+    })
+  }
+  // 書き込み
+  if(!isClicked) { return false };
+  console.log("Writing");
+  // マウス移動処理
+  var line = document.getElementById(uuid);
+  var nowPath = line.getAttribute('d');
+  line.setAttribute('d',`${nowPath} L${x},${y}`);
+}
+function WriteEnd() {
+  if (!isLimit) {
+    info.innerText = "";
+  }
+  if (isEraser) {
+    var elements = document.getElementsByClassName("hover");
+    if (elements.length != 1) { return };
+
+    var line = elements[0];
+    line.removeAttribute("class");
+    ws.send(JSON.stringify({type: "delete", layer:"", data: line.id}))
+    undoCache.push(JSON.stringify({layer:line.parentNode.id,data:line.outerHTML}))
+    line.remove();
+
+    ReDrow();
+    return;
+  }
+  if (!isClicked) { return };
+  console.log("Write End");
+  isClicked = false;
+  var line = document.getElementById(uuid);
+  if (line == null) {
+    cache.innerHTML = `<path d="M0,0" id="drowingLine" stroke-linecap="round" stroke-linejoin="round" style="stroke-width: 0px; stroke: 0; opacity: 0;"></path><path d="M0,0" stroke-linecap="round" stroke-linejoin="round" id="mouse"></path>`
+    return
+  };
+  if (line.outerHTML.match(/L/g) == null) {// 移動してない場合
+    if (isPhone()) {
+      document.getElementById("options").scrollIntoView({
+        behavior:"smooth",
+        block: "center",
+        inline: "center"
+      })
+    }
+    cache.innerHTML = `<path d="M0,0" id="drowingLine" stroke-linecap="round" stroke-linejoin="round" style="stroke-width: 0px; stroke: 0; opacity: 0;"></path><path d="M0,0" stroke-linecap="round" stroke-linejoin="round" id="mouse"></path>`
+    return
+  }
+  document.getElementById("layer"+drowLayer.value).insertBefore(line,null);
+  ws.send(JSON.stringify({type: "append", layer:"layer"+drowLayer.value, data: line.outerHTML}))
+
+  cache.innerHTML = `<path d="M0,0" id="drowingLine" stroke-linecap="round" stroke-linejoin="round" style="stroke-width: 0px; stroke: 0; opacity: 0;"></path><path d="M0,0" stroke-linecap="round" stroke-linejoin="round" id="mouse"></path>`;
+  writeCache.push(uuid);
+  undoCache = [];
+  ReDrow();
+  UpDateLineInfo();
+  UpDateFavicon();
+}
+
+// 呼び出し関数
+function Undo() { //1つ戻す
+  if (writeCache.length < 1) { return };
+
+  var del = writeCache.splice(-1,1)
+  var line = document.getElementById(del)
+  if (line != null) {
+    undoCache.push(JSON.stringify({layer:line.parentNode.id,data:line.outerHTML}))
+    line.remove();
+    ws.send(JSON.stringify({ type: "delete", layer:"",data:line.id}))
+  }
+  ReDrow();
+}
+function Redo() { //1つ進む
+  if (undoCache.length < 1) { return };
+
+  var add = undoCache.splice(-1,1);
+  var json = JSON.parse(add)
+  var layer = document.getElementById(json.layer);
+  var line = str2HTML(json.data);
+  var lineDate = +Infinity;
+  if (!isNaN(line.id)) {
+    lineDate = parseInt(line.id);
+  }
+  var isPlaced = false;
+
+  for (var i=0;i<layer.childElementCount;i++) {
+    var nowLine = layer.children[i];
+    if (isNaN(nowLine.id)) { continue;};
+
+    if (parseInt(nowLine.id,10) > lineDate) {
+      layer.insertBefore(line,layer.children[i]);
+      layer.innerHTML += "";
+      isPlaced = true;
+      break;
+    }
+  }
+  if (!isPlaced) {
+    layer.innerHTML += "\n" +json.data;
+  }
+  writeCache.push(line.id)
+  ws.send(JSON.stringify({ type: "append", layer:json.layer,data:json.data}))
+
+  ReDrow();
+}
+function Eraser() {
+  isEraser = !isEraser
+  document.getElementById("drowColor").disabled = isEraser
+  document.getElementById("drowAlpha").disabled = isEraser
+  document.getElementById("drowBold").disabled = isEraser
+  ReDrow()
+};
+function AreaClear() {//削除
+  for (var i = 0; i < 10; i++) {
+    var lay = document.getElementById("layer"+i)
+    if (lay == null) {
+      break
+    }
+    lay.innerHTML = ""
+  }
+  document.getElementById("masks").innerHTML = `<rect x="0" y="0" width="1280" height="720" fill="white"></rect>`
+  writeCache=[];
+  undoCache=[];
+  ws.send(JSON.stringify({ type: "clear", layer:"",data:""}));
+};
+function downloadPNG() {// DL
+  var mouse = document.getElementById('mouse').style
+  mouse.opacity = 0
+  var svg = document.getElementById("layers")
+  var svgData = new XMLSerializer().serializeToString(svg);
+  var canvas = document.createElement("canvas");
+  canvas.width = svg.width.baseVal.value;
+  canvas.height = svg.height.baseVal.value;
+  var ctx = canvas.getContext("2d");
+  var image = new Image;
+  image.src = "data:image/svg+xml;charset=utf-8;base64," + btoa(unescape(encodeURIComponent(svgData)));
+  image.onload = function(){
+    ctx.drawImage( image, 0, 0 );
+    var dl = document.createElement("a");
+    dl.href = canvas.toDataURL("image/jpg");
+    dl.setAttribute("download", `${room}_${GetDate()}.jpg`);
+    dl.dispatchEvent(new MouseEvent("click"));
+    mouse.opacity = 1
+  }
+};
+function downloadSVG() {// DL
+  var mouse = document.getElementById('mouse')
+  mouse.opacity = 0
+  var svg = document.getElementById("layers")
+  var svgData = new XMLSerializer().serializeToString(svg);
+  var dl = document.createElement("a");
+  dl.href = "data:image/svg+xml;charset=utf-8;base64," + btoa(unescape(encodeURIComponent(svgData)))
+  dl.setAttribute("download", `${room}_${GetDate()}.svg`);
+  dl.dispatchEvent(new MouseEvent("click"));
+  mouse.opacity = 1
+};
+function downloadIco() {// DL
+  var mouse = document.getElementById('mouse').style
+  mouse.opacity = 0
+  var back = document.getElementById('background').style
+  back.opacity = 0
+  var svg = document.getElementById("layers")
+  var svgData = new XMLSerializer().serializeToString(svg);
+  var canvas = document.createElement("canvas");
+  canvas.width = 48;
+  canvas.height = 48;
+  var ctx = canvas.getContext("2d");
+  ctx.scale(0.0666,0.0666)
+  var image = new Image;
+  image.src = "data:image/svg+xml;charset=utf-8;base64," + btoa(unescape(encodeURIComponent(svgData)));
+  image.onload = function(){
+    ctx.drawImage( image, -180, 0 );
+    var dl = document.createElement("a");
+    dl.href = canvas.toDataURL("image/ico");
+    dl.setAttribute("download", `${room}_${GetDate()}.ico`);
+    dl.dispatchEvent(new MouseEvent("click"));
+    mouse.opacity = 1
+    back.opacity = 1
+  }
+};
+function LayerHidden(layerID) {
+  var lay = document.getElementById(layerID)
+  console.log(layerID+","+lay.style.display)
+  if (lay.style.display == "inline") {
+    lay.style.display = "none";
+  } else {
+    lay.style.display = "inline";
+  }
+  console.log(layerID+","+lay.style.display)
+}
+function SetClipBoard() {
+  // 中身を設定
+  var url = loc.href + "&uid="+Math.floor(16**8 * Math.random()).toString(16);
+  document.getElementById("URLtext").value = url
+  // 文字をすべて選択
+  document.getElementById("URLtext").select();
+  // コピー
+  document.execCommand("copy");
+}
+function ChangeLimit() { // Limitを修正
+  var data = document.getElementById("LineLimit").value
+  ws.send(JSON.stringify({type: "limit", layer:"", data: data}))
+}
+function UpDateLineInfo() {
+  var lines = 0
+  for (var i = 0; i < 5; i++) {
+    var ley = document.getElementById("layer"+i)
+    if (ley == null) {
+      break
+    }
+    lines += ley.childElementCount
+  }
+  document.getElementById("usedLine").innerText = `${lines}/${LineLimit}`
+}
+  // その他関数
+function ReDrow() {
+  document.getElementById('undo').value = "Undo("+writeCache.length+")";
+  document.getElementById('redo').value = "Redo("+undoCache.length+")";
+  document.getElementById('viewLayer').innerText = drowLayer.value;
+  document.getElementById('viewColor').innerText = drowColor.value.toUpperCase();
+  document.getElementById('viewAlpha').innerText = drowAlpha.value.padStart(3,"0")+"%";
+  document.getElementById('viewBold').innerText = drowBold.value.padStart(3,"0");
+}
+function str2HTML(html) {
+  const dummyElement = document.createElement('div');
+  dummyElement.innerHTML = html;
+  return dummyElement.firstElementChild;
+}
+function isPhone() {
+  if (navigator.userAgent.match(/iPad|iPhone|Android.+Mobile/)) {
+    return true;
+  } else {
+    return false;
+  }
+}
+function SetMask(layerID,element) {
+  var id = element.getAttribute('id')
+  var masks = document.getElementById("masks")
+  for (var i = 0; i < masks.children.length;i++) {
+    if (masks.children[i].dataset.layer == layerID) {
+      masks.children[i].innerHTML += element.outerHTML
+    }
+  }
+  masks.innerHTML += "\n" + `<mask id="${id}mask" data-layer="${layerID}"><rect x="0" y="0" width="1280" height="720" fill="white"></rect>`+element.outerHTML+"</mask>"
+
+  var lay = document.getElementById(layerID).children
+  for (var i = 0;i < lay.length; i++) {
+    if (lay[i].getAttribute('mask') == null) {
+      lay[i].setAttribute('mask',`url(#${id}mask)`)
+    }
+  }
+  return
+}
+function UpDateFavicon() {
+  var svg = document.getElementById("layers")
+  var svgData = new XMLSerializer().serializeToString(svg);
+  document.getElementById("icon").href="data:image/svg+xml;charset=utf-8;base64," + btoa(unescape(encodeURIComponent(svgData)))
+
+}
+function GetDate() {
+  let now = new Date()
+  return `${now.getFullYear()}-${('00' + (now.getMonth() + 1)).slice(-2)}-${('00' + now.getDate()).slice(-2)}_${('00' + now.getHours()).slice(-2)}-${('00' + now.getMinutes()).slice(-2)}`
+}
+// 初期化
+ReDrow();
