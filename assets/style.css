@@ -1,0 +1,72 @@
+:root {
+  --darker: #18230F;
+  --dark: #27391C;
+  --light: #255F38;
+  --lighter: #1F7D53;
+}
+
+body {
+  position: relative;
+
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+body>* {
+  position: absolute;
+}
+
+.login {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.popup {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  /* align-content: center; */
+  justify-content: center;
+  align-items: center;
+}
+
+
+.popup input[type="text"] {
+  border-width: 0 0 2px 0;
+}
+
+.lock {
+  margin-left: auto;
+  margin-right: auto;
+  position: relative;
+  width: 1280px;
+  height: 720px;
+}
+
+.area {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  -webkit-transform: translate(-50%, -50%);
+  -ms-transform: translate(-50%, -50%);
+  border: solid 5px #000;
+  box-sizing: border-box;
+}
+
+.hover {
+  animation: blinking 0.25s ease-in-out infinite alternate;
+}
+
+@keyframes blinking {
+  0% {
+    opacity: 0;
+    filter: invert()
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
