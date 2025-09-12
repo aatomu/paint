@@ -3,70 +3,102 @@
   --dark: #27391C;
   --light: #255F38;
   --lighter: #1F7D53;
+  --accent: #A8D58B;
+  /* アクセントカラーを追加 */
+  --text-color: #f0f0f0;
 }
 
 body {
-  position: relative;
-
   width: 100vw;
   height: 100vh;
   overflow: hidden;
-}
+  margin: 0;
+  font-family: cursive;
 
-body>* {
-  position: absolute;
-}
+  /* 色が流れるようなアニメーション背景 */
+  background: linear-gradient(135deg, var(--darker), var(--dark), var(--light), var(--lighter));
+  background-size: 400% 400%;
+  animation: gradient-flow 15s ease infinite;
 
-.login {
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
-
-.popup {
   display: flex;
-  flex-direction: column;
-  flex-wrap: nowrap;
-  /* align-content: center; */
   justify-content: center;
   align-items: center;
 }
 
-
-.popup input[type="text"] {
-  border-width: 0 0 2px 0;
-}
-
-.lock {
-  margin-left: auto;
-  margin-right: auto;
-  position: relative;
-  width: 1280px;
-  height: 720px;
-}
-
-.area {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  -webkit-transform: translate(-50%, -50%);
-  -ms-transform: translate(-50%, -50%);
-  border: solid 5px #000;
-  box-sizing: border-box;
-}
-
-.hover {
-  animation: blinking 0.25s ease-in-out infinite alternate;
-}
-
-@keyframes blinking {
+/* 背景色アニメーション */
+@keyframes gradient-flow {
   0% {
-    opacity: 0;
-    filter: invert()
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
   }
 
   100% {
-    opacity: 1;
+    background-position: 0% 50%;
   }
+}
+
+/* フォームとタイトルを包括するコンテナ */
+.login-container {
+  text-align: center;
+}
+
+.title {
+  font-size: 3.5rem;
+  color: var(--text-color);
+  font-weight: 700;
+  margin-bottom: 2rem;
+  text-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+}
+
+/* ログインポップアップのスタイル（グラスモーフィズム） */
+.popup.login {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+  /* 要素間のスペース */
+  padding: 40px;
+  background: rgb(53, 88, 53);
+  border-radius: 16px;
+}
+
+.popup.login input[type="text"] {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.5);
+  padding: 12px 5px 8px;
+  /* パディングを調整 */
+  color: var(--text-color);
+  font-size: 1.1rem;
+  width: 280px;
+  transition: border-color 0.3s ease;
+}
+
+/* ボタンのスタイル */
+.popup button {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 8px;
+  background: var(--lighter);
+  color: var(--text-color);
+  font-size: 1.2rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  margin-top: 10px;
+  /* ボタンの上のマージン */
+}
+
+.popup button:hover {
+  background: var(--light);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+}
+
+.popup button:active {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
