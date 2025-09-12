@@ -7,35 +7,8 @@
     <meta name="description" content="{Connect}人がお絵描き中? お部屋の中身↓(表示されない際は時間をおいてください)">
     <meta id="image" name="og:image" content="{HeadURL}">
     <meta name="twitter:card" content="summary_large_image" />
-    <style>
-      body {
-        text-align: center;
-      }
-      .lock {
-        margin-left: auto;
-        margin-right: auto;
-        position: relative;
-        width: 1280px;
-        height: 720px;
-      }
-      .area {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        -webkit-transform: translate(-50%, -50%);
-        -ms-transform: translate(-50%, -50%);
-        border: solid 5px #000;
-        box-sizing: border-box;
-      }
-      .hover {
-        animation: blinking 0.25s ease-in-out infinite alternate;
-      }
-      @keyframes blinking {
-        0% {opacity: 0;filter: invert()}
-        100% {opacity: 1;}
-      }
-    </style>
+
+    <link href="style.css" rel="stylesheet">
   </head>
   <body>
     <h1 id="info">
