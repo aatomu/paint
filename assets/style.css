@@ -102,3 +102,68 @@ body {
   transform: translateY(-1px);
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
+
+.hamburger {
+  z-index: 1000;
+  position: absolute;
+  top: 2ch;
+  left: 2ch;
+}
+
+.hamburger summary::marker {
+  content: none
+}
+
+.hamburger-icon {
+  width: 5ch;
+  height: 5ch;
+
+  border-color: var(--light);
+  border-width: 2px;
+  border-style: solid;
+  border-radius: 2ch;
+  background-color: var(--accent);
+}
+
+.hamburger[open] {
+  width: 20ch;
+  height: 20lh;
+  border-color: var(--light);
+  border-width: 2px;
+  border-style: solid;
+  border-radius: 2ch;
+  background-color: var(--accent);
+}
+
+.hamburger[open] .hamburger-icon {
+  border-width: 0;
+}
+
+.hamburger-menu-header {
+  width: 100%;
+  text-align: center;
+}
+
+li.tool-selector-radio input[type=radio] {
+  display: none;
+}
+
+li.tool-selector-radio:has(input[type=radio]:checked) {
+  list-style-type: circle;
+}
+
+li.tool-selector-radio:has(input[type=radio]:checked)::after {
+  content: " <<<";
+}
+
+.tool-setting input {
+  width: calc(100% - 2ch);
+}
+
+.board {
+  min-width: 3840px;
+  min-height: 2160px;
+  width: 3840px;
+  height: 2160px;
+  background-color: white;
+}
