@@ -4,7 +4,7 @@
 <head prefix="og: http://ogp.me/ns#">
   <meta charset="utf-8">
   <title>Paintboard.svg - {Room}</title>
-  <link id="icon" rel="icon" type="image/svg" href="">
+  <link rel="icon" type="image/svg+xml" href="/icon.svg">
   <meta name="description" content="画質が無駄にいい わいわい使えるお絵かきサイト">
   <meta id="image" name="og:image" content="{HeadURL}">
   <meta name="twitter:card" content="summary_large_image" />
@@ -15,57 +15,53 @@
 
 <body>
   <!-- Left hamburger menu -->
-  <details class="hamburger" open>
-    <summary>
-      <div class="hamburger-icon"></div>
-    </summary>
-    <div class="hamburger-menu">
-      <div class="hamburger-menu-header"><span>===== Tool =====</span></div>
-      <ul class="tool-selector">
-        <li class="tool-selector-radio">
-          <label>
-            <span>Move</span>
-            <input type="radio" value="move" name="tool" checked>
-          </label>
-        </li>
-        <li class="tool-selector-radio">
-          <label>
-            <span>Pen</span>
-            <input type="radio" value="pen" name="tool">
-          </label>
-        </li>
-        <li class="tool-selector-radio">
-          <label>
-            <span>Text</span>
-            <input type="radio" value="text" name="tool">
-          </label>
-        </li>
-        <li class="tool-selector-radio">
-          <label>
-            <span>Line</span>
-            <input type="radio" value="line" name="tool">
-          </label>
-        </li>
-      </ul>
-      <div class="hamburger-menu-header"><span>===== Setting =====</span></div>
-      <ul class="tool-setting">
-        <li>
-          <label>
-            <span>Color Picker</span><br>
-            <button>B</button><button>W</button><button>R</button><button>G</button><button>B</button><br>
-            <input type="color">
-          </label>
-        </li>
-        <li>
-          <label>
-            <span>Pen Bold(0px)</span><br>
-            <button>5px</button><button>15px</button><button>60px</button><br>
-            <input type="range">
-          </label>
-        </li>
-      </ul>
-    </div>
-  </details>
+  <div class="hamburger">
+    <div class="hamburger-icon"> </div>
+    <div class="hamburger-menu-header"><span>===== Tool =====</span></div>
+    <ul class="tool-selector">
+      <li class="tool-selector-radio">
+        <label>
+          <span>Move</span>
+          <input type="radio" value="move" name="tool" checked>
+        </label>
+      </li>
+      <li class="tool-selector-radio">
+        <label>
+          <span>Pen</span>
+          <input type="radio" value="pen" name="tool">
+        </label>
+      </li>
+      <li class="tool-selector-radio">
+        <label>
+          <span>Text</span>
+          <input type="radio" value="text" name="tool">
+        </label>
+      </li>
+      <li class="tool-selector-radio">
+        <label>
+          <span>Line</span>
+          <input type="radio" value="line" name="tool">
+        </label>
+      </li>
+    </ul>
+    <div class="hamburger-menu-header"><span>===== Setting =====</span></div>
+    <ul class="tool-setting">
+      <li>
+        <label>
+          <span>Color Picker</span><br>
+          <button>B</button><button>W</button><button>R</button><button>G</button><button>B</button><br>
+          <input type="color">
+        </label>
+      </li>
+      <li>
+        <label>
+          <span>Pen Bold(0px)</span><br>
+          <button>5px</button><button>15px</button><button>60px</button><br>
+          <input type="range">
+        </label>
+      </li>
+    </ul>
+  </div>
   <svg id="board" class="board" width="3840px" height="2160px" xmlns="http://www.w3.org/2000/svg" style="fill: none;">
 
   </svg>
