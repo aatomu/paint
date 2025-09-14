@@ -108,35 +108,38 @@ body {
   position: absolute;
   top: 2ch;
   left: 2ch;
-}
 
-.hamburger summary::marker {
-  content: none
+  border-color: var(--light);
+  border-width: 2px;
+  border-style: solid;
+  border-radius: 2ch;
+  background-color: var(--accent);
 }
 
 .hamburger-icon {
   width: 5ch;
   height: 5ch;
 
-  border-color: var(--light);
-  border-width: 2px;
-  border-style: solid;
-  border-radius: 2ch;
-  background-color: var(--accent);
+  cursor: pointer;
+
+  background-image: url("/icon.svg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
-.hamburger[open] {
-  width: 20ch;
-  height: 20lh;
-  border-color: var(--light);
-  border-width: 2px;
-  border-style: solid;
-  border-radius: 2ch;
-  background-color: var(--accent);
+.hamburger-icon:hover {
+  animation: rotation 2s linear 0s infinite normal both running;
 }
 
-.hamburger[open] .hamburger-icon {
-  border-width: 0;
+@keyframes rotation {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(359.999deg);
+  }
 }
 
 .hamburger-menu-header {
@@ -144,8 +147,8 @@ body {
   text-align: center;
 }
 
-li.tool-selector-radio input[type=radio] {
-  display: none;
+li.tool-selector-radio:hover {
+  text-decoration: underline;
 }
 
 li.tool-selector-radio:has(input[type=radio]:checked) {
@@ -154,6 +157,10 @@ li.tool-selector-radio:has(input[type=radio]:checked) {
 
 li.tool-selector-radio:has(input[type=radio]:checked)::after {
   content: " <<<";
+}
+
+li.tool-selector-radio input[type=radio] {
+  display: none;
 }
 
 .tool-setting input {
