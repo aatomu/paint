@@ -53,7 +53,7 @@ function updateBoard() {
 
 
 /**
- * @typedef {BoardDataMouse|BoardDataAdd|BoardDataRemove|BoardDataClear} BoardData
+ * @typedef {PacketMouse|PacketAdd|PacketRemove|PacketClear} Packet
  * @property {number} timestamp
  * @property {string} user
  * @property {"mouse"|"add"|"remove"|"clear"} operation
@@ -61,30 +61,57 @@ function updateBoard() {
  */
 
 /**
- * @typedef {object} BoardDataMouse
+ * @typedef {object} PacketMouse
  * @property {number} timestamp
  * @property {string} user
  * @property {"mouse"} operation
  * @property {{x:number,y:number}} data
  */
 /**
- * @typedef {object} BoardDataAdd
+ * @typedef {object} PacketAdd
  * @property {number} timestamp
  * @property {string} user
  * @property {"add"} operation
- * @property {string} data
+ * @property {writePen|writeText|writeLine} data
  */
 
 /**
- * @typedef {object} BoardDataRemove
+ * @typedef {object} writePen
+ * @property {"pen"} type
+ * @property {string} d
+ * @property {string} color
+ * @property {string} bold
+ */
+
+/**
+ * @typedef {object} writeText
+ * @property {"text"} type
+ * @property {string} text
+ * @property {string} color
+ * @property {string} bold
+ * @property {{x:number,y:number}} pos
+ */
+
+/**
+ * @typedef {object} writeLine
+ * @property {"line"} type
+ * @property {string} color
+ * @property {string} bold
+ * @property {{x:number,y:number}} start
+ * @property {{x:number,y:number}} end
+ */
+
+
+/**
+ * @typedef {object} PacketRemove
  * @property {number} timestamp
  * @property {string} user
  * @property {"remove"} operation
- * @property {string} data
+ * @property {{timestamp:number}} data
  */
 
 /**
- * @typedef {object} BoardDataClear
+ * @typedef {object} PacketClear
  * @property {number} timestamp
  * @property {string} user
  * @property {"clear"} operation
