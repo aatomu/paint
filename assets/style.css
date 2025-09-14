@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap');
+
 :root {
   --darker: #18230F;
   --dark: #27391C;
@@ -133,11 +135,11 @@ body {
 }
 
 @keyframes rotation {
-  from {
+  0% {
     transform: rotate(0deg);
   }
 
-  to {
+  100% {
     transform: rotate(359.999deg);
   }
 }
@@ -147,7 +149,15 @@ body {
   text-align: center;
 }
 
-li.tool-selector-radio:hover {
+ul {
+  padding-left: 30px;
+}
+
+li {
+  font-family: 'Noto Color Emoji';
+}
+
+li:hover {
   text-decoration: underline;
 }
 
@@ -165,6 +175,54 @@ li.tool-selector-radio input[type=radio] {
 
 .tool-setting input {
   width: calc(100% - 2ch);
+}
+
+.functions input {
+  display: none;
+}
+
+.list-move {
+  list-style: "\1F590";
+}
+
+.list-pen {
+  list-style: "\270F\FE0F";
+}
+
+.list-text {
+  list-style: "\1F520";
+}
+
+.list-line {
+  list-style: "\1F4CF";
+}
+
+.list-colorPicker {
+  list-style: "\1F3A8";
+}
+
+.list-bold {
+  list-style: "\2712";
+}
+
+.list-undo {
+  list-style: "\21A9";
+}
+
+.list-redo {
+  list-style: "\21AA";
+}
+
+.list-removeObj {
+  list-style: "\1F5D1\FE0F";
+}
+
+.list-copyLink {
+  list-style: "\1F517";
+}
+
+.list-clearAll {
+  list-style: "\1F4A3";
 }
 
 .board {
