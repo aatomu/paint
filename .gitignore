@@ -4,3 +4,5 @@ rooms/*
 image/*
 # vscode
 .history
+
+*bak*
