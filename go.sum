@@ -1,4 +1,2 @@
-github.com/aatomu/atomicgo v0.0.0-20230902080359-58e184602ae2 h1:kqwJfBaj1lSq6ZWoy7je+T4zM+/rwOLHE63xSZcGLgU=
-github.com/aatomu/atomicgo v0.0.0-20230902080359-58e184602ae2/go.mod h1:1B5llhTi34KrNWQBRa2VwaPUPFoBGa8DF+dCCP30Qf4=
 golang.org/x/net v0.8.0 h1:Zrh2ngAOFYneWTAIAPethzeaQLuHwhuBkuV6ZiRnUaQ=
 golang.org/x/net v0.8.0/go.mod h1:QVkue5JL9kW//ek3r6jTKnTFis1tRmNAW2P1shuFdJc=

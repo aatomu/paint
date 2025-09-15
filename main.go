@@ -3,12 +3,12 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
 	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
 
-	"github.com/aatomu/atomicgo/files"
 	"golang.org/x/net/websocket"
 )
 
@@ -46,8 +46,7 @@ func (ff fallbackFileSystem) Open(name string) (http.File, error) {
 func main() {
 	// Work dir
 	_, file, _, _ := runtime.Caller(0)
-	goDir := filepath.Dir(file) + "/"
-	files.SetWorkDir(goDir)
+	os.Chdir(filepath.Dir(file))
 
 	// Http handle
 	assets := http.FileServer(fallbackFileSystem{http.Dir("./assets")})
