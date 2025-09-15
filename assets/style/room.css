@@ -75,6 +75,7 @@ body {
   background-color: var(--button);
 
   user-select: none;
+  overflow: hidden;
 }
 
 .side-menu-area:hover {
@@ -110,6 +111,15 @@ body {
 .side-menu-area .button.with-text {
   justify-content: flex-start;
 }
+
+.side-menu-area:has(.wide-menu) {
+  transition: width 0.2s ease-in-out;
+}
+
+.side-menu-area:has(.wide-menu):hover {
+  width: 200%;
+}
+
 
 .board {
   min-width: 3840px;
