@@ -9,16 +9,24 @@ const boardConfig = {
   offsetX: 0,
   offsetY: 0,
 }
+
+/** 
+ * @typedef {object} Mouse
+ * @property {"move"|"pen"|"text"|"line"} mode 
+ * @property {boolean} isDragging
+ * @property {[x:number,y:number]} start
+ */
+
+/** @type Mouse */
 const mouse = {
+  mode: "move",
   isDragging: false,
-  startX: 0,
-  startY: 0
+  start: [0, 0],
 }
 
 
 document.addEventListener("wheel", (e) => {
   console.log("updateScale")
-  e.preventDefault()
 
   if (e.deltaY < 0) {
     boardConfig.scale += 0.05
@@ -32,13 +40,13 @@ document.addEventListener("wheel", (e) => {
 
 window.addEventListener("mousedown", (e) => {
   mouse.isDragging = true
-  mouse.startX = e.clientX - boardConfig.offsetX
-  mouse.startY = e.clientY - boardConfig.offsetY
+  mouse.start[0] = e.clientX - boardConfig.offsetX
+  mouse.start[1] = e.clientY - boardConfig.offsetY
 })
 window.addEventListener("mousemove", (e) => {
   if (!mouse.isDragging) return
-  boardConfig.offsetX = e.clientX - mouse.startX
-  boardConfig.offsetY = e.clientY - mouse.startY
+  boardConfig.offsetX = e.clientX - mouse.start[0]
+  boardConfig.offsetY = e.clientY - mouse.start[1]
   updateBoard()
 })
 window.addEventListener("mouseup", (e) => {
@@ -65,7 +73,7 @@ function updateBoard() {
  * @property {number} timestamp
  * @property {string} user
  * @property {"mouse"} operation
- * @property {{x:number,y:number}} data
+ * @property {[x:number,y:number]} data
  */
 /**
  * @typedef {object} PacketAdd
@@ -89,7 +97,7 @@ function updateBoard() {
  * @property {string} text
  * @property {string} color
  * @property {string} bold
- * @property {{x:number,y:number}} pos
+ * @property {[x:number,y:number]} pos
  */
 
 /**
@@ -97,8 +105,8 @@ function updateBoard() {
  * @property {"line"} type
  * @property {string} color
  * @property {string} bold
- * @property {{x:number,y:number}} start
- * @property {{x:number,y:number}} end
+ * @property {[x:number,y:number]} start
+ * @property {[x:number,y:number]} end
  */
 
 
