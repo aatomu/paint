@@ -291,10 +291,6 @@ updateBold(15)
 
 /**
  * @typedef {PacketMouse|PacketAdd|PacketRemove|PacketClear} Packet
- * @property {string} id
- * @property {string} user
- * @property {"mouse"|"add"|"remove"|"clear"} operation
- * @property {Object} data
  */
 
 /**
@@ -344,7 +340,7 @@ updateBold(15)
  * @property {string} id
  * @property {string} user
  * @property {"remove"} operation
- * @property {null} data
+ * @property {{id:string}} data
  */
 
 /**
