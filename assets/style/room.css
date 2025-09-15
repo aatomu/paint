@@ -2,35 +2,36 @@
 
 body {
   position: relative;
+  user-select: none;
 }
 
 .side-menu {
-  z-index: 1000;
   position: absolute;
   top: 2ch;
   left: 2ch;
 
   padding: 0 1ch;
 
-  border-color: var(--light);
+  border-color: var(--border);
   border-width: 2px;
   border-style: solid;
   border-radius: 2ch;
-  background-color: var(--accent);
+  background-color: var(--bg-secondly-color);
 
 
   width: 20ch;
   height: fit-content;
   display: grid;
   grid-template:
-    "head   head   head   head   head   head" 2lh
-    "pen    pen    pen    pen    pen    pen " 2lh
-    "text   text   text   text   text   text" 2lh
-    "line   line   line   line   line   line" 2lh
-    "pallet pallet pallet pallet pallet pallet" 4lh
-    "bold   bold   bold   bold   bold   bold  " 4lh
-    "undo   undo   undo   redo   redo   redo  " 2lh
-    " in     in    move   move   out    out" 2lh
+    "head    head    head    head    head    head" 2lh
+    "pen     pen     pen     pen     pen     pen " 2lh
+    "text    text    text    text    text    text" 2lh
+    "line    line    line    line    line    line" 2lh
+    "pallet  pallet  pallet  pallet  pallet  pallet" 4lh
+    "opacity opacity opacity opacity opacity opacity" 3lh
+    "bold    bold    bold    bold    bold    bold  " 4lh
+    "undo    undo    undo    redo    redo    redo  " 2lh
+    " in      in     move    move    out     out" 2lh
     "l l l l l l" 6lh / 1fr 1fr 1fr 1fr 1fr 1fr;
   gap: 0.5ch;
 
@@ -74,7 +75,6 @@ body {
 
   background-color: var(--button);
 
-  user-select: none;
   overflow: hidden;
 }
 
@@ -86,7 +86,7 @@ body {
   background-color: var(--button-select);
 }
 
-.side-menu-area input {
+.side-menu-area input[type=radio] {
   display: none;
 }
 
@@ -120,11 +120,23 @@ body {
   width: 200%;
 }
 
+.zoom {
+  position: absolute;
+  bottom: 2ch;
+  left: 2ch;
+
+  border-radius: 5px;
+
+  background-color: rgb(from var(--bg-secondly-color) r g b/ 70%);
+}
 
 .board {
+  z-index: -1;
+  position: absolute;
+  transform-origin: 0 0;
+
   min-width: 3840px;
   min-height: 2160px;
   width: 3840px;
   height: 2160px;
-  background-color: white;
 }
