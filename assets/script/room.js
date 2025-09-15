@@ -39,6 +39,7 @@ const boardConfig = {
 /** 
  * @typedef {object} Pointer
  * @property {"move"|"pen"|"text"|"line"} mode tool Mode
+ * @property {boolean} isDownPrev previous Pointer down mode flag
  * @property {boolean} isDown Pointer down mode flag
  * @property {[x:number,y:number]} prev Pointer previous position
  * @property {string} current Modifiy object id
@@ -48,6 +49,7 @@ const boardConfig = {
 /** @type Pointer */
 const pointer = {
   mode: "move",
+  isDownPrev: false,
   isDown: false,
   prev: [0, 0],
   current: "",
@@ -56,13 +58,14 @@ const pointer = {
 
 
 window.addEventListener("wheel", (e) => {
-  console.log("updateScale")
 
   const prevScale = boardConfig.scale
   if (e.deltaY < 0) {
     boardConfig.scale += 0.05
+    console.log(JSON.stringify({ "event": "scroll", "callback": "zoom-in" }))
   } else {
     boardConfig.scale -= 0.05
+    console.log(JSON.stringify({ "event": "scroll", "callback": "zoom-out" }))
   }
   boardConfig.scale = Math.max(boardConfig.scale, 0.05)
   boardConfig.scale = Math.min(boardConfig.scale, 30)
@@ -74,9 +77,31 @@ window.addEventListener("wheel", (e) => {
   updateBoard()
 })
 
-window.addEventListener("mousedown", pointerDown)
-window.addEventListener("mousemove", pointerMove)
-window.addEventListener("mouseup", pointerUp)
+window.addEventListener("mousemove", pointerEvent)
+
+function pointerEvent(e) {
+  const isDown = e.buttons !== 0
+
+  let callback = "null"
+  // change to down
+  if (isDown && !pointer.isDownPrev) {
+    pointerDown(e)
+    callback = "down"
+  }
+  // keep to down
+  if (isDown && pointer.isDownPrev) {
+    pointerMove(e)
+    callback = "move"
+  }
+  // change to up
+  if (!isDown && pointer.isDownPrev) {
+    pointerUp(e)
+    callback = "up"
+  }
+
+  console.log(JSON.stringify({ "event": "pointer", "callback": callback, "mode": pointer.mode }))
+  pointer.isDownPrev = isDown
+}
 
 function pointerDown(e) {
   pointer.isDown = true
@@ -87,7 +112,6 @@ function pointerDown(e) {
 
   // @ts-expect-error
   pointer.mode = document.querySelector("input[name=tool]:checked").value
-  console.log("pointerDown", pointer.mode, pointer.prev)
 
   const targetElements = document.elementsFromPoint(e.clientX, e.clientY)
   let isBypass = false
@@ -139,14 +163,12 @@ function pointerMove(e) {
     (e.clientX - boardConfig.offsetX),
     (e.clientY - boardConfig.offsetY)
   ]
-  console.log("pointerDown", pointer.isDown, position)
 
   if (!pointer.isDown) return
   switch (pointer.mode) {
     case "move": {
       boardConfig.offsetX += position[0] - pointer.prev[0]
       boardConfig.offsetY += position[1] - pointer.prev[1]
-      console.log(position[0] - pointer.prev[0])
       updateBoard()
       break
     }
@@ -171,7 +193,6 @@ function pointerMove(e) {
 }
 
 function pointerUp(e) {
-  console.log("pointerUp")
   pointer.isDown = false
 }
 
