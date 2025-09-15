@@ -25,20 +25,55 @@
       </div>
       <input type="radio" name="tool" value="pen">
     </label>
-    <label class="side-menu-area" style="grid-area: text;">
-      <div class="button with-text">
-        <span class="icon">&#x1F520;</span><span>Text</span>
-      </div>
-      <input type="radio" name="tool" value="text">
-    </label>
     <label class="side-menu-area" style="grid-area: line;">
       <div class="button with-text">
         <span class="icon">&#x1F4CF;</span><span>Line</span>
       </div>
       <input type="radio" name="tool" value="line">
     </label>
+    <label class="side-menu-area" style="grid-area: stamp;">
+      <div class="button with-text">
+        <span class="icon">&#x1F528;</span><span>Text Stamp</span>
+      </div>
+      <input type="radio" name="tool" value="stamp">
+      <textarea class="stamp-input" id="stamp-input"></textarea>
+    </label>
     <div class="side-menu-area" style="grid-area: pallet;">
-      <span class="icon">&#x1F3A8;</span><span>Pallet</span>
+      <div>
+        <span class="icon">&#x1F3A8;</span><span>Pallet</span>
+      </div>
+      <div class="templates">
+        <div class="color-template">
+          <div class="color-template-preview" data-color="#ff0000"></div>
+        </div>
+        <div class="color-template">
+          <div class="color-template-preview" data-color="#ff9900"></div>
+        </div>
+        <div class="color-template">
+          <div class="color-template-preview" data-color="#ffff00"></div>
+        </div>
+        <div class="color-template">
+          <div class="color-template-preview" data-color="#339933"></div>
+        </div>
+        <div class="color-template">
+          <div class="color-template-preview" data-color="#66ccff"></div>
+        </div>
+        <div class="color-template">
+          <div class="color-template-preview" data-color="#0000ff"></div>
+        </div>
+        <div class="color-template">
+          <div class="color-template-preview" data-color="#ff00ff"></div>
+        </div>
+        <div class="color-template">
+          <div class="color-template-preview" data-color="#ffffff"></div>
+        </div>
+        <div class="color-template">
+          <div class="color-template-preview" data-color="#000000"></div>
+        </div>
+        <div class="color-template">
+          <input type="color" id="color-input" class="color-template-preview" style="background-color: none;" value="">
+        </div>
+      </div>
     </div>
     <label class="side-menu-area" style="grid-area: opacity;">
       <div>
@@ -51,15 +86,15 @@
       <div>
         <span class="icon">&#x2712;</span><span>Pen Bold</span>
       </div>
-      <div class="bold-templates">
-        <div class="bold-template" id="bold-small">
-          <div style="height: 5px; aspect-ratio: 1/1; background-color: black;border-radius: 50%;"></div>
+      <div class="templates">
+        <div class="bold-template">
+          <div class="bold-template-preview" data-bold="5"></div>
         </div>
-        <div class="bold-template" id="bold-middle">
-          <div style="height: 15px; aspect-ratio: 1/1; background-color: black;border-radius: 50%;"></div>
+        <div class="bold-template">
+          <div class="bold-template-preview" data-bold="15"></div>
         </div>
-        <div class="bold-template" id="bold-large">
-          <div style="height: 30px; aspect-ratio: 1/1; background-color: black;border-radius: 50%;"></div>
+        <div class="bold-template">
+          <div class="bold-template-preview" data-bold="30"></div>
         </div>
       </div>
       <input type="range" min="1" max="200" step="1" value="15" class="range bold" id="bold-range">

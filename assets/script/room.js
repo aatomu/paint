@@ -6,21 +6,18 @@ const board = document.getElementById("board")
 /** @type HTMLSpanElement */
 //@ts-expect-error
 const zoomValue = document.getElementById("zoom-value")
+/** @type HTMLTextAreaElement */
+//@ts-expect-error
+const stampInput = document.getElementById("stamp-input")
+/** @type HTMLInputElement */
+//@ts-expect-error
+const colorInput = document.getElementById("color-input")
 /** @type HTMLInputElement */
 //@ts-expect-error
 const opacityRange = document.getElementById("opacity-range")
 /** @type HTMLSpanElement */
 //@ts-expect-error
 const opacityValue = document.getElementById("opacity-value")
-/** @type HTMLDivElement */
-//@ts-expect-error
-const boldSmall = document.getElementById("bold-small")
-/** @type HTMLDivElement */
-//@ts-expect-error
-const boldMiddle = document.getElementById("bold-middle")
-/** @type HTMLDivElement */
-//@ts-expect-error
-const boldLarge = document.getElementById("bold-large")
 /** @type HTMLInputElement */
 //@ts-expect-error
 const boldRange = document.getElementById("bold-range")
@@ -32,13 +29,14 @@ const boardConfig = {
   scale: 1,
   offsetX: 0,
   offsetY: 0,
+  color: "",
   opacity: 1,
   bold: 15,
 }
 
 /** 
  * @typedef {object} Pointer
- * @property {"move"|"pen"|"text"|"line"} mode tool Mode
+ * @property {"move"|"pen"|"line"|"stamp"} mode tool Mode
  * @property {boolean} isDownPrev previous Pointer down mode flag
  * @property {boolean} isDown Pointer down mode flag
  * @property {[x:number,y:number]} prev Pointer previous position
@@ -77,6 +75,7 @@ window.addEventListener("wheel", (e) => {
   updateBoard()
 })
 
+// MARK: pointerEvent
 window.addEventListener("mousemove", pointerEvent)
 
 function pointerEvent(e) {
@@ -113,6 +112,8 @@ function pointerDown(e) {
   // @ts-expect-error
   pointer.mode = document.querySelector("input[name=tool]:checked").value
 
+  /** @type {SVGElement[]|HTMLElement[]} */
+  // @ts-expect-error
   const targetElements = document.elementsFromPoint(e.clientX, e.clientY)
   let isBypass = false
   for (let i = 0; i < targetElements.length; i++) {
@@ -134,8 +135,7 @@ function pointerDown(e) {
       pen.id = pointer.current
       pointer.data = `M${pointer.prev[0] / boardConfig.scale},${pointer.prev[1] / boardConfig.scale}`
       pen.setAttribute("d", pointer.data)
-      const color = "#000000"
-      pen.setAttribute("style", `stroke-width: ${boardConfig.bold}px; stroke: ${color}; opacity: ${boardConfig.opacity};`)
+      pen.setAttribute("style", `stroke-width: ${boardConfig.bold}px; stroke: ${boardConfig.color}; opacity: ${boardConfig.opacity};`)
       pen.setAttribute("stroke-linecap", "round")
       pen.setAttribute("stroke-linejoin", "round")
       board.appendChild(pen)
@@ -149,11 +149,31 @@ function pointerDown(e) {
       line.setAttribute("y1", (pointer.prev[1] / boardConfig.scale).toFixed(0))
       line.setAttribute("x2", (pointer.prev[0] / boardConfig.scale).toFixed(0))
       line.setAttribute("y2", (pointer.prev[1] / boardConfig.scale).toFixed(0))
-      const color = "#000000"
-      line.setAttribute("style", `stroke-width: ${boardConfig.bold}px; stroke: ${color}; opacity: ${boardConfig.opacity};`)
+      line.setAttribute("style", `stroke-width: ${boardConfig.bold}px; stroke: ${boardConfig.color}; opacity: ${boardConfig.opacity};`)
       line.setAttribute("stroke-linecap", "round")
       board.appendChild(line)
       break
+    }
+    case "stamp": {
+      if (stampInput.value.length === 0) break
+      pointer.current = new Date().getTime().toString();
+      const stamp = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      stamp.id = pointer.current
+      stamp.setAttribute("x", (pointer.prev[0] / boardConfig.scale).toFixed(0))
+      stamp.setAttribute("y", (pointer.prev[1] / boardConfig.scale).toFixed(0))
+      stamp.setAttribute("text-anchor", "middle")
+      const color = "#000000"
+      const fontSize = boardConfig.bold * 2
+      stamp.setAttribute("style", `font-size: ${fontSize}px; fill: ${boardConfig.color}; opacity: ${boardConfig.opacity};`)
+      const stampLines = stampInput.value.split("\n")
+      for (let i = 0; i < stampLines.length; i++) {
+        const line = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
+        line.textContent = stampLines[i]
+        line.setAttribute("dy", fontSize.toFixed(2))
+        line.setAttribute("text-anchor", "middle")
+        stamp.append(line)
+      }
+      board.appendChild(stamp)
     }
   }
 }
@@ -179,7 +199,14 @@ function pointerMove(e) {
       pen.setAttribute("d", pointer.data)
       break
     }
-    case "text": {
+    case "stamp": {
+      const stamp = document.getElementById(pointer.current)
+      if (!stamp) return
+      stamp.setAttribute("x", (position[0] / boardConfig.scale).toFixed(0))
+      stamp.setAttribute("y", (position[1] / boardConfig.scale).toFixed(0))
+      for (let i = 0; i < stamp.children.length; i++) {
+        stamp.children[i].setAttribute("x", (position[0] / boardConfig.scale).toFixed(0))
+      }
       break
     }
     case "line": {
@@ -196,6 +223,7 @@ function pointerUp(e) {
   pointer.isDown = false
 }
 
+// MARK: updateBoard()
 function updateBoard() {
   board.style.transform = `scale(${boardConfig.scale})`
   board.style.top = `${boardConfig.offsetY}px`
@@ -204,20 +232,48 @@ function updateBoard() {
 }
 updateBoard()
 
+// MARK: #color
+document.querySelectorAll("div.color-template").forEach((element) => {
+  /** @type {HTMLElement|null} */
+  const preview = element.querySelector("div.color-template-preview")
+  if (!preview) return
+  const color = preview.dataset.color
+  if (!color) return
+  preview.style.backgroundColor = color
+  element.addEventListener("click", () => {
+    updateColor(color)
+  })
+})
+
+colorInput.addEventListener("input", () => {
+  updateColor(colorInput.value)
+})
+
+function updateColor(value) {
+  boardConfig.color = value
+  colorInput.value = value
+  console.log(value)
+}
+
+// MARK: #opacity
 opacityRange.addEventListener("input", () => {
   opacityValue.textContent = opacityRange.value.padStart(3, "0") + "%"
   boardConfig.opacity = parseFloat(opacityRange.value) / 100
 })
 
-boldSmall.addEventListener("click", () => {
-  updateBold(5)
+// MARK: #bold
+document.querySelectorAll("div.bold-template").forEach((element) => {
+  /** @type {HTMLElement|null} */
+  const preview = element.querySelector("div.bold-template-preview")
+  if (!preview) return
+  const bold = preview.dataset.bold
+  if (!bold) return
+  preview.style.height = bold + "px"
+  element.addEventListener("click", () => {
+    updateBold(parseInt(bold))
+  })
 })
-boldMiddle.addEventListener("click", () => {
-  updateBold(15)
-})
-boldLarge.addEventListener("click", () => {
-  updateBold(30)
-})
+
 boldRange.addEventListener("input", () => {
   updateBold(boldRange.value)
 })
@@ -231,6 +287,8 @@ function updateBold(value) {
   boldInput.value = value
 }
 updateBold(15)
+
+// MARK: #typedef
 
 /**
  * @typedef {PacketMouse|PacketAdd|PacketRemove|PacketClear} Packet
@@ -252,7 +310,7 @@ updateBold(15)
  * @property {string} id
  * @property {string} user
  * @property {"add"} operation
- * @property {writePen|writeText|writeLine} data
+ * @property {writePen|writeLine|writeStamp} data
  */
 
 /**
@@ -264,9 +322,9 @@ updateBold(15)
  */
 
 /**
- * @typedef {object} writeText
- * @property {"text"} type
- * @property {string} text
+ * @typedef {object} writeStamp
+ * @property {"stamp"} type
+ * @property {string[]} text
  * @property {string} color
  * @property {string} bold
  * @property {[x:number,y:number]} pos
