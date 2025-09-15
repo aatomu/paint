@@ -5,12 +5,35 @@
 const board = document.getElementById("board")
 /** @type HTMLSpanElement */
 //@ts-expect-error
-const zoom = document.getElementById("zoom")
+const zoomValue = document.getElementById("zoom-value")
+/** @type HTMLInputElement */
+//@ts-expect-error
+const opacityRange = document.getElementById("opacity-range")
+/** @type HTMLSpanElement */
+//@ts-expect-error
+const opacityValue = document.getElementById("opacity-value")
+/** @type HTMLDivElement */
+//@ts-expect-error
+const boldSmall = document.getElementById("bold-small")
+/** @type HTMLDivElement */
+//@ts-expect-error
+const boldMiddle = document.getElementById("bold-middle")
+/** @type HTMLDivElement */
+//@ts-expect-error
+const boldLarge = document.getElementById("bold-large")
+/** @type HTMLInputElement */
+//@ts-expect-error
+const boldRange = document.getElementById("bold-range")
+/** @type HTMLInputElement */
+//@ts-expect-error
+const boldInput = document.getElementById("bold-input")
 
 const boardConfig = {
   scale: 1,
   offsetX: 0,
-  offsetY: 100,
+  offsetY: 0,
+  opacity: 1,
+  bold: 15,
 }
 
 /** 
@@ -66,20 +89,46 @@ function pointerDown(e) {
   pointer.mode = document.querySelector("input[name=tool]:checked").value
   console.log("pointerDown", pointer.mode, pointer.prev)
 
+  const targetElements = document.elementsFromPoint(e.clientX, e.clientY)
+  let isBypass = false
+  for (let i = 0; i < targetElements.length; i++) {
+    if (targetElements[i].classList.contains("side-menu") || targetElements[i].classList.contains("side-menu-area")) {
+      isBypass = true
+      break
+    }
+  }
+  if (isBypass) pointer.isDown = false
+  console.log("cancel by .side-menu")
+
   switch (pointer.mode) {
+    case "move": {
+      break
+    }
     case "pen": {
       pointer.current = new Date().getTime().toString();
       const pen = document.createElementNS("http://www.w3.org/2000/svg", "path");
       pen.id = pointer.current
       pointer.data = `M${pointer.prev[0] / boardConfig.scale},${pointer.prev[1] / boardConfig.scale}`
       pen.setAttribute("d", pointer.data)
-      const bold = 100
       const color = "#000000"
-      const alpha = 1
-      pen.setAttribute("style", `stroke-width: ${bold}px; stroke: ${color}; opacity: ${alpha};`)
+      pen.setAttribute("style", `stroke-width: ${boardConfig.bold}px; stroke: ${color}; opacity: ${boardConfig.opacity};`)
       pen.setAttribute("stroke-linecap", "round")
       pen.setAttribute("stroke-linejoin", "round")
       board.appendChild(pen)
+      break
+    }
+    case "line": {
+      pointer.current = new Date().getTime().toString();
+      const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      line.id = pointer.current
+      line.setAttribute("x1", (pointer.prev[0] / boardConfig.scale).toFixed(0))
+      line.setAttribute("y1", (pointer.prev[1] / boardConfig.scale).toFixed(0))
+      line.setAttribute("x2", (pointer.prev[0] / boardConfig.scale).toFixed(0))
+      line.setAttribute("y2", (pointer.prev[1] / boardConfig.scale).toFixed(0))
+      const color = "#000000"
+      line.setAttribute("style", `stroke-width: ${boardConfig.bold}px; stroke: ${color}; opacity: ${boardConfig.opacity};`)
+      line.setAttribute("stroke-linecap", "round")
+      board.appendChild(line)
       break
     }
   }
@@ -90,7 +139,7 @@ function pointerMove(e) {
     (e.clientX - boardConfig.offsetX),
     (e.clientY - boardConfig.offsetY)
   ]
-  console.log("pointerDown", pointer.mode, pointer.prev, position)
+  console.log("pointerDown", pointer.isDown, position)
 
   if (!pointer.isDown) return
   switch (pointer.mode) {
@@ -108,8 +157,16 @@ function pointerMove(e) {
       pen.setAttribute("d", pointer.data)
       break
     }
-    case "text":
-    case "line":
+    case "text": {
+      break
+    }
+    case "line": {
+      const line = document.getElementById(pointer.current)
+      if (!line) return
+      line.setAttribute("x2", (position[0] / boardConfig.scale).toFixed(0))
+      line.setAttribute("y2", (position[1] / boardConfig.scale).toFixed(0))
+      break
+    }
   }
 }
 
@@ -122,11 +179,38 @@ function updateBoard() {
   board.style.transform = `scale(${boardConfig.scale})`
   board.style.top = `${boardConfig.offsetY}px`
   board.style.left = `${boardConfig.offsetX}px`
-  zoom.textContent = "x" + boardConfig.scale.toFixed(2).padStart(5,"0")
+  zoomValue.textContent = "x" + boardConfig.scale.toFixed(2).padStart(5, "0")
 }
-
-
 updateBoard()
+
+opacityRange.addEventListener("input", () => {
+  opacityValue.textContent = opacityRange.value.padStart(3, "0") + "%"
+  boardConfig.opacity = parseFloat(opacityRange.value) / 100
+})
+
+boldSmall.addEventListener("click", () => {
+  updateBold(5)
+})
+boldMiddle.addEventListener("click", () => {
+  updateBold(15)
+})
+boldLarge.addEventListener("click", () => {
+  updateBold(30)
+})
+boldRange.addEventListener("input", () => {
+  updateBold(boldRange.value)
+})
+boldInput.addEventListener("input", () => {
+  updateBold(boldInput.value)
+})
+
+function updateBold(value) {
+  boardConfig.bold = value
+  boldRange.value = value
+  boldInput.value = value
+}
+updateBold(15)
+
 /**
  * @typedef {PacketMouse|PacketAdd|PacketRemove|PacketClear} Packet
  * @property {string} id
