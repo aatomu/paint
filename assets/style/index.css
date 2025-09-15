@@ -11,7 +11,7 @@ body {
 
 .title {
   font-size: 3.5rem;
-  color: var(--text-color);
+  color: var(--Headline);
   font-weight: 700;
   margin-bottom: 2rem;
   text-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
@@ -34,7 +34,7 @@ body {
   border-bottom: 2px solid rgba(255, 255, 255, 0.5);
   padding: 12px 5px 8px;
   /* パディングを調整 */
-  color: var(--text-color);
+  color: var(--Headline);
   font-size: 1.1rem;
   width: 280px;
   transition: border-color 0.3s ease;
@@ -45,8 +45,8 @@ body {
   padding: 12px 20px;
   border: none;
   border-radius: 8px;
-  background: var(--lighter);
-  color: var(--text-color);
+  background: var(--button);
+  color: var(--background-color);
   font-size: 1.2rem;
   font-weight: 700;
   cursor: pointer;
@@ -57,7 +57,7 @@ body {
 }
 
 .popup button:hover {
-  background: var(--light);
+  background: var(--button-hover);
   transform: translateY(-3px);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
 }

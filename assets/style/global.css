@@ -1,13 +1,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap');
 
 :root {
-  --darker: #18230F;
-  --dark: #27391C;
+  --background-color: #004643;
+  --bg-secondly-color: #abd1c6;
   --light: #255F38;
   --lighter: #1F7D53;
   --accent: #A8D58B;
-  /* アクセントカラーを追加 */
-  --text-color: #f0f0f0;
+  --box-border: #001e1d;
+
+  --Headline: #fffffe;
 
   --button: #C2E5FF;
   --button-hover: #7DC7FF;
@@ -20,9 +21,5 @@ body {
   overflow: hidden;
   margin: 0;
   font-family: cursive;
-
-  /* 色が流れるようなアニメーション背景 */
-  background: linear-gradient(135deg, var(--darker), var(--dark), var(--light), var(--lighter));
-  background-size: 400% 400%;
-  animation: gradient-flow 15s ease infinite;
+  background: var(--background-color);
 }
