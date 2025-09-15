@@ -20,18 +20,17 @@ body {
 
 
   width: 20ch;
-  height: fit-content;
   display: grid;
   grid-template:
     "head    head    head    head    head    head" 2lh
-    "pen     pen     pen     pen     pen     pen " 2lh
-    "text    text    text    text    text    text" 2lh
-    "line    line    line    line    line    line" 2lh
-    "pallet  pallet  pallet  pallet  pallet  pallet" 4lh
-    "opacity opacity opacity opacity opacity opacity" 3lh
-    "bold    bold    bold    bold    bold    bold  " 4lh
-    "undo    undo    undo    redo    redo    redo  " 2lh
-    " in      in     move    move    out     out" 2lh
+    "pen     pen     pen     pen     pen     pen " min-content
+    "text    text    text    text    text    text" min-content
+    "line    line    line    line    line    line" min-content
+    "pallet  pallet  pallet  pallet  pallet  pallet" min-content
+    "opacity opacity opacity opacity opacity opacity" min-content
+    "bold    bold    bold    bold    bold    bold  " min-content
+    "undo    undo    undo    redo    redo    redo  " min-content
+    " in      in     move    move    out     out" min-content
     "l l l l l l" 6lh / 1fr 1fr 1fr 1fr 1fr 1fr;
   gap: 0.5ch;
 
@@ -112,12 +111,29 @@ body {
   justify-content: flex-start;
 }
 
-.side-menu-area:has(.wide-menu) {
-  transition: width 0.2s ease-in-out;
+.side-menu-area .range {
+  width: 100%;
 }
 
-.side-menu-area:has(.wide-menu):hover {
-  width: 200%;
+.side-menu-area .bold-templates {
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: space-evenly;
+}
+
+
+.side-menu .bold-template {
+  width: 45px;
+  height: 45px;
+
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
 }
 
 .zoom {

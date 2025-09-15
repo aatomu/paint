@@ -37,22 +37,34 @@
       </div>
       <input type="radio" name="tool" value="line">
     </label>
-    <label class="side-menu-area" style="grid-area: pallet;">
-      <div class="wide-menu">
-        <span class="icon">&#x1F3A8;</span><span>Pallet</span>
-      </div>
-    </label>
+    <div class="side-menu-area" style="grid-area: pallet;">
+      <span class="icon">&#x1F3A8;</span><span>Pallet</span>
+    </div>
     <label class="side-menu-area" style="grid-area: opacity;">
       <div>
         <span class="icon">&#x1F4A7;</span><span>Opacity</span>
       </div>
-      <input type="range" min="0" max="1" step="0.01" value="1">
+      <input type="range" min="1" max="100" step="1" value="100" class="range" id="opacity-range">
+      <span id="opacity-value">100%</span>
     </label>
-    <label class="side-menu-area" style="grid-area: bold;">
-      <div class="wide-menu">
+    <div class="side-menu-area" style="grid-area: bold;">
+      <div>
         <span class="icon">&#x2712;</span><span>Pen Bold</span>
       </div>
-    </label>
+      <div class="bold-templates">
+        <div class="bold-template" id="bold-small">
+          <div style="height: 5px; aspect-ratio: 1/1; background-color: black;border-radius: 50%;"></div>
+        </div>
+        <div class="bold-template" id="bold-middle">
+          <div style="height: 15px; aspect-ratio: 1/1; background-color: black;border-radius: 50%;"></div>
+        </div>
+        <div class="bold-template" id="bold-large">
+          <div style="height: 30px; aspect-ratio: 1/1; background-color: black;border-radius: 50%;"></div>
+        </div>
+      </div>
+      <input type="range" min="1" max="200" step="1" value="15" class="range bold" id="bold-range">
+      <span><input type="number" min="1" max="200" step="1" value="15" id="bold-input">px</span>
+    </div>
     <label class="side-menu-area" style="grid-area: undo;">
       <div class="button">
         <span class="icon">&#x21A9;</span>
@@ -87,10 +99,10 @@
       </div>
     </label>
   </div>
-  <span id="zoom" class="zoom"></span>
+  <span id="zoom-value" class="zoom"></span>
   <svg id="board" class="board" width="3840px" height="2160px" xmlns="http://www.w3.org/2000/svg" style="fill: none; top:0px; left:0px">
     <rect x="0" y="0" width="100%" height="100%" fill="#f0f0f0"></rect>
-    <path d="M500,0L500,2160" style="stroke: black; stroke-width: 20px;"></path>
+    <path d="M500,0L500,2160" style="stroke: black; stroke-width: 5px;"></path>
     <path d="M0,500L3840,500" style="stroke: gray; stroke-width: 20px;"></path>
     <path d="M0,0L3840,2160" style="stroke: lightgray; stroke-width: 20px;"></path>
   </svg>
