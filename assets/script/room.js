@@ -252,7 +252,6 @@ colorInput.addEventListener("input", () => {
 function updateColor(value) {
   boardConfig.color = value
   colorInput.value = value
-  console.log(value)
 }
 
 // MARK: #opacity
