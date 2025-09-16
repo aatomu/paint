@@ -304,12 +304,16 @@ window.addEventListener("DOMContentLoaded", () => {
   updateColor("#000000")
   updateBold("15")
 
-  const ws = new WebSocket("/ws")
+  const url = new URL(window.location.href)
+  url.pathname = "/ws"
+  const ws = new WebSocket(url.href)
 
   /** @param {Event} event*/
   ws.addEventListener("open", (event) => {
     console.log(JSON.stringify({ "event": "websocket", "callback": "open" }), event)
-
+    const text = "aaaaa"
+    ws.send(encodeVarInt(text.length))
+    ws.send(text)
   })
   /** @param {MessageEvent} event*/
   ws.addEventListener("message", (event) => {
@@ -327,3 +331,25 @@ window.addEventListener("DOMContentLoaded", () => {
 
   })
 })
+
+
+/**
+ * 数値を可変長整数（varint）としてArrayBufferにエンコードします。
+ * @param {number} value
+ * @returns {ArrayBuffer}
+ */
+function encodeVarInt(value) {
+  if (value < 0) {
+    throw new Error("負の整数はvarintにエンコードできません。");
+  }
+
+  const bytes = [];
+  while (value >= 0x80) {
+    bytes.push((value & 0x7F) | 0x80);
+    value >>= 7;
+  }
+  bytes.push(value);
+
+  const buffer = new Uint8Array(bytes);
+  return buffer.buffer;
+}

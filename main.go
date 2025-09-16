@@ -1,6 +1,9 @@
 package main
 
 import (
+	"encoding/binary"
+	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -8,13 +11,23 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
+	"time"
 
 	"golang.org/x/net/websocket"
 )
 
 var (
-	Listen = ":1026"
+	Listen    = ":1026"
+	Rooms     = map[string]*Room{}
+	RoomsLock = sync.RWMutex{}
 )
+
+type Room struct {
+	sync.RWMutex
+	Objects []string
+	Conn    map[int64]*websocket.Conn
+}
 
 type fallbackFileSystem struct {
 	fs http.FileSystem
@@ -71,5 +84,69 @@ func middleware(h http.Handler) http.Handler {
 }
 
 func WebsocketRequest(w *websocket.Conn) {
-	defer w.Close()
+	room := w.Request().URL.Query().Get("id")
+	if room == "" {
+		w.Close()
+		return
+	}
+	id := time.Now().UnixNano()
+
+	// Save session
+	RoomsLock.Lock()
+	r, ok := Rooms[room]
+	if !ok {
+		r = &Room{
+			Objects: []string{},
+			Conn:    map[int64]*websocket.Conn{},
+		}
+		Rooms[room] = r
+	}
+	RoomsLock.Unlock()
+
+	r.Lock()
+	r.Conn[id] = w
+	r.Unlock()
+
+	defer func() {
+		r.Lock()
+		delete(r.Conn, id)
+		r.Unlock()
+		w.Close()
+	}()
+
+	br := &byteReader{w}
+	for {
+		size, err := binary.ReadUvarint(br)
+		if err != nil {
+			return
+		}
+		buf := make([]byte, size)
+
+		log.Println("Size", size)
+		_, err = io.ReadFull(w, buf)
+		if err != nil {
+			return
+		}
+		log.Println("Readed", size)
+
+		Rooms[room].RLock()
+		for k, v := range Rooms[room].Conn {
+			log.Println("Sent", k)
+			v.Write([]byte(fmt.Sprintf("length:%d\n", size)))
+			v.Write(buf)
+		}
+		Rooms[room].RUnlock()
+	}
+}
+
+type byteReader struct {
+	io.Reader
+}
+
+func (br *byteReader) ReadByte() (byte, error) {
+	var b [1]byte
+	if _, err := br.Read(b[:]); err != nil {
+		return 0, err
+	}
+	return b[0], nil
 }
