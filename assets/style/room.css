@@ -24,8 +24,8 @@ body {
   grid-template:
     "head    head    head    head    head    head   " 2lh
     "pen     pen     pen     pen     pen     pen    " min-content
-    "stamp   stamp   stamp   stamp   stamp   stamp  " min-content
     "line    line    line    line    line    line   " min-content
+    "stamp   stamp   stamp   stamp   stamp   stamp  " min-content
     "pallet  pallet  pallet  pallet  pallet  pallet " min-content
     "opacity opacity opacity opacity opacity opacity" min-content
     "bold    bold    bold    bold    bold    bold   " min-content
