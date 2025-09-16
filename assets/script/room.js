@@ -25,26 +25,16 @@ const boldRange = document.getElementById("bold-range")
 //@ts-expect-error
 const boldInput = document.getElementById("bold-input")
 
+/** @type {BoardConfigration} */
 const boardConfig = {
   scale: 1,
-  offsetX: 0,
-  offsetY: 0,
+  offset: [0, 0],
   color: "",
   opacity: 1,
   bold: 15,
 }
 
-/** 
- * @typedef {object} Pointer
- * @property {"move"|"pen"|"line"|"stamp"} mode tool Mode
- * @property {boolean} isDownPrev previous Pointer down mode flag
- * @property {boolean} isDown Pointer down mode flag
- * @property {[x:number,y:number]} prev Pointer previous position
- * @property {string} current Modifiy object id
- * @property {any} data Modifiy object data
- */
-
-/** @type Pointer */
+/** @type {PointerConfiguration} */
 const pointer = {
   mode: "move",
   isDownPrev: false,
@@ -55,10 +45,10 @@ const pointer = {
 }
 
 
-window.addEventListener("wheel", (e) => {
+window.addEventListener("wheel", (event) => {
 
   const prevScale = boardConfig.scale
-  if (e.deltaY < 0) {
+  if (event.deltaY < 0) {
     boardConfig.scale += 0.05
     console.log(JSON.stringify({ "event": "scroll", "callback": "zoom-in" }))
   } else {
@@ -69,8 +59,8 @@ window.addEventListener("wheel", (e) => {
   boardConfig.scale = Math.min(boardConfig.scale, 30)
 
   const scaleRatio = boardConfig.scale / prevScale
-  boardConfig.offsetX = e.clientX - ((e.clientX - boardConfig.offsetX) * scaleRatio);
-  boardConfig.offsetY = e.clientY - ((e.clientY - boardConfig.offsetY) * scaleRatio);
+  boardConfig.offset[0] = event.clientX - ((event.clientX - boardConfig.offset[0]) * scaleRatio);
+  boardConfig.offset[1] = event.clientY - ((event.clientY - boardConfig.offset[1]) * scaleRatio);
 
   updateBoard()
 })
@@ -78,23 +68,27 @@ window.addEventListener("wheel", (e) => {
 // MARK: pointerEvent
 window.addEventListener("mousemove", pointerEvent)
 
-function pointerEvent(e) {
-  const isDown = e.buttons !== 0
+/**
+ * @param {MouseEvent} event 
+ * @return {void}
+ */
+function pointerEvent(event) {
+  const isDown = event.buttons !== 0
 
   let callback = "null"
   // change to down
   if (isDown && !pointer.isDownPrev) {
-    pointerDown(e)
+    pointerDown(event)
     callback = "down"
   }
   // keep to down
   if (isDown && pointer.isDownPrev) {
-    pointerMove(e)
+    pointerMove(event)
     callback = "move"
   }
   // change to up
   if (!isDown && pointer.isDownPrev) {
-    pointerUp(e)
+    pointerUp(event)
     callback = "up"
   }
 
@@ -102,11 +96,15 @@ function pointerEvent(e) {
   pointer.isDownPrev = isDown
 }
 
-function pointerDown(e) {
+/**
+ * @param {MouseEvent} event
+ * @return {void}
+ */
+function pointerDown(event) {
   pointer.isDown = true
   pointer.prev = [
-    (e.clientX - boardConfig.offsetX),
-    (e.clientY - boardConfig.offsetY)
+    (event.clientX - boardConfig.offset[0]),
+    (event.clientY - boardConfig.offset[1])
   ]
 
   // @ts-expect-error
@@ -114,7 +112,7 @@ function pointerDown(e) {
 
   /** @type {SVGElement[]|HTMLElement[]} */
   // @ts-expect-error
-  const targetElements = document.elementsFromPoint(e.clientX, e.clientY)
+  const targetElements = document.elementsFromPoint(event.clientX, event.clientY)
   let isBypass = false
   for (let i = 0; i < targetElements.length; i++) {
     if (targetElements[i].classList.contains("side-menu") || targetElements[i].classList.contains("side-menu-area")) {
@@ -162,7 +160,6 @@ function pointerDown(e) {
       stamp.setAttribute("x", (pointer.prev[0] / boardConfig.scale).toFixed(0))
       stamp.setAttribute("y", (pointer.prev[1] / boardConfig.scale).toFixed(0))
       stamp.setAttribute("text-anchor", "middle")
-      const color = "#000000"
       const fontSize = boardConfig.bold * 2
       stamp.setAttribute("style", `font-size: ${fontSize}px; fill: ${boardConfig.color}; opacity: ${boardConfig.opacity};`)
       const stampLines = stampInput.value.split("\n")
@@ -178,17 +175,21 @@ function pointerDown(e) {
   }
 }
 
-function pointerMove(e) {
+/**
+ * @param {MouseEvent} event 
+ * @return {void}
+ */
+function pointerMove(event) {
   const position = [
-    (e.clientX - boardConfig.offsetX),
-    (e.clientY - boardConfig.offsetY)
+    (event.clientX - boardConfig.offset[0]),
+    (event.clientY - boardConfig.offset[1])
   ]
 
   if (!pointer.isDown) return
   switch (pointer.mode) {
     case "move": {
-      boardConfig.offsetX += position[0] - pointer.prev[0]
-      boardConfig.offsetY += position[1] - pointer.prev[1]
+      boardConfig.offset[0] += position[0] - pointer.prev[0]
+      boardConfig.offset[1] += position[1] - pointer.prev[1]
       updateBoard()
       break
     }
@@ -219,18 +220,21 @@ function pointerMove(e) {
   }
 }
 
-function pointerUp(e) {
+/**
+ * @param {MouseEvent} event 
+ * @return {void}
+ */
+function pointerUp(event) {
   pointer.isDown = false
 }
 
 // MARK: updateBoard()
 function updateBoard() {
   board.style.transform = `scale(${boardConfig.scale})`
-  board.style.top = `${boardConfig.offsetY}px`
-  board.style.left = `${boardConfig.offsetX}px`
+  board.style.top = `${boardConfig.offset[1]}px`
+  board.style.left = `${boardConfig.offset[0]}px`
   zoomValue.textContent = "x" + boardConfig.scale.toFixed(2).padStart(5, "0")
 }
-updateBoard()
 
 // MARK: #color
 document.querySelectorAll("div.color-template").forEach((element) => {
@@ -249,6 +253,10 @@ colorInput.addEventListener("input", () => {
   updateColor(colorInput.value)
 })
 
+/**
+ * @param {string} value
+ * @return {void}
+ */
 function updateColor(value) {
   boardConfig.color = value
   colorInput.value = value
@@ -269,7 +277,7 @@ document.querySelectorAll("div.bold-template").forEach((element) => {
   if (!bold) return
   preview.style.height = bold + "px"
   element.addEventListener("click", () => {
-    updateBold(parseInt(bold))
+    updateBold(bold)
   })
 })
 
@@ -280,73 +288,42 @@ boldInput.addEventListener("input", () => {
   updateBold(boldInput.value)
 })
 
+/**
+ * @param {string} value
+ * @return {void}
+ */
 function updateBold(value) {
-  boardConfig.bold = value
+  boardConfig.bold = parseInt(value)
   boldRange.value = value
   boldInput.value = value
 }
-updateBold(15)
 
-// MARK: #typedef
+window.addEventListener("DOMContentLoaded", () => {
+  updateBoard()
+  updateColor("#000000")
+  updateColor("#000000")
+  updateBold("15")
 
-/**
- * @typedef {PacketMouse|PacketAdd|PacketRemove|PacketClear} Packet
- */
+  const ws = new WebSocket("/ws")
 
-/**
- * @typedef {object} PacketMouse
- * @property {string} id
- * @property {string} user
- * @property {"mouse"} operation
- * @property {[x:number,y:number]} data
- */
-/**
- * @typedef {object} PacketAdd
- * @property {string} id
- * @property {string} user
- * @property {"add"} operation
- * @property {writePen|writeLine|writeStamp} data
- */
+  /** @param {Event} event*/
+  ws.addEventListener("open", (event) => {
+    console.log(JSON.stringify({ "event": "websocket", "callback": "open" }), event)
 
-/**
- * @typedef {object} writePen
- * @property {"pen"} type
- * @property {string} d
- * @property {string} color
- * @property {string} bold
- */
+  })
+  /** @param {MessageEvent} event*/
+  ws.addEventListener("message", (event) => {
+    console.log(JSON.stringify({ "event": "websocket", "callback": "message" }), event)
 
-/**
- * @typedef {object} writeStamp
- * @property {"stamp"} type
- * @property {string[]} text
- * @property {string} color
- * @property {string} bold
- * @property {[x:number,y:number]} pos
- */
+  })
+  /** @param {Event|ErrorEvent} event*/
+  ws.addEventListener("error", (event) => {
+    console.log(JSON.stringify({ "event": "websocket", "callback": "error" }), event)
 
-/**
- * @typedef {object} writeLine
- * @property {"line"} type
- * @property {string} color
- * @property {string} bold
- * @property {[x:number,y:number]} start
- * @property {[x:number,y:number]} end
- */
+  })
+  /** @param {CloseEvent} event*/
+  ws.addEventListener("close", (event) => {
+    console.log(JSON.stringify({ "event": "websocket", "callback": "close" }), event)
 
-
-/**
- * @typedef {object} PacketRemove
- * @property {string} id
- * @property {string} user
- * @property {"remove"} operation
- * @property {{id:string}} data
- */
-
-/**
- * @typedef {object} PacketClear
- * @property {string} id
- * @property {string} user
- * @property {"clear"} operation
- * @property {null} data
- */
+  })
+})
