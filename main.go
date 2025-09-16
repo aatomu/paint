@@ -121,12 +121,10 @@ func WebsocketRequest(w *websocket.Conn) {
 		}
 		buf := make([]byte, size)
 
-		log.Println("Size", size)
 		_, err = io.ReadFull(w, buf)
 		if err != nil {
 			return
 		}
-		log.Println("Readed", size)
 
 		Rooms[room].RLock()
 		for _, v := range Rooms[room].Conn {
