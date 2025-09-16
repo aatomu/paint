@@ -70,10 +70,6 @@ func middleware(h http.Handler) http.Handler {
 	})
 }
 
-func HttpRequest(w http.ResponseWriter, r *http.Request) {
-
-}
-
 func WebsocketRequest(w *websocket.Conn) {
 	defer w.Close()
 }
