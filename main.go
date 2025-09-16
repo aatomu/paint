@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/binary"
-	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -130,9 +129,7 @@ func WebsocketRequest(w *websocket.Conn) {
 		log.Println("Readed", size)
 
 		Rooms[room].RLock()
-		for k, v := range Rooms[room].Conn {
-			log.Println("Sent", k)
-			v.Write([]byte(fmt.Sprintf("length:%d\n", size)))
+		for _, v := range Rooms[room].Conn {
 			v.Write(buf)
 		}
 		Rooms[room].RUnlock()
