@@ -1,18 +1,18 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/binary"
 	"io"
 	"log"
 	"net/http"
 	"os"
-	"path"
 	"path/filepath"
 	"runtime"
-	"strings"
 	"sync"
 	"time"
 
+	_ "github.com/mattn/go-sqlite3"
 	"golang.org/x/net/websocket"
 )
 
@@ -22,43 +22,22 @@ var (
 	RoomsLock = sync.RWMutex{}
 )
 
-type Room struct {
-	sync.RWMutex
-	Objects []string
-	Conn    map[int64]*websocket.Conn
-}
-
-type fallbackFileSystem struct {
-	fs http.FileSystem
-}
-
-func (ff fallbackFileSystem) Open(name string) (http.File, error) {
-	f, err := ff.fs.Open(name)
-	if err == nil {
-		return f, nil
-	}
-
-	// ファイルが見つからない場合は .html を付けて再試行
-	if !strings.HasSuffix(name, ".html") {
-		if f2, err2 := ff.fs.Open(name + ".html"); err2 == nil {
-			return f2, nil
-		}
-	}
-
-	// ディレクトリなら index.html を見る
-	if strings.HasSuffix(name, "/") {
-		if f3, err3 := ff.fs.Open(path.Join(name, "index.html")); err3 == nil {
-			return f3, nil
-		}
-	}
-
-	return nil, err
-}
-
 func main() {
 	// Work dir
 	_, file, _, _ := runtime.Caller(0)
 	os.Chdir(filepath.Dir(file))
+
+	// Open SQL
+	db, err := sql.Open("sqlite3", "./rooms.db")
+	if err != nil {
+		log.Panicf("Failed Open Database: %v", err)
+	}
+	defer db.Close()
+
+	err = CreateTables(db)
+	if err != nil {
+		log.Panicf("Failed Open Database: %v", err)
+	}
 
 	// Http handle
 	assets := http.FileServer(fallbackFileSystem{http.Dir("./assets")})
@@ -67,9 +46,9 @@ func main() {
 
 	// Boot Server
 	log.Println("Http Server Boot")
-	err := http.ListenAndServe(Listen, nil)
+	err = http.ListenAndServe(Listen, nil)
 	if err != nil {
-		log.Println("Failed Listen:", err)
+		log.Panicf("Failed Listen Http Server: %v", err)
 		return
 	}
 }
@@ -95,8 +74,7 @@ func WebsocketRequest(w *websocket.Conn) {
 	r, ok := Rooms[room]
 	if !ok {
 		r = &Room{
-			Objects: []string{},
-			Conn:    map[int64]*websocket.Conn{},
+			Conn: map[int64]*websocket.Conn{},
 		}
 		Rooms[room] = r
 	}
@@ -132,16 +110,4 @@ func WebsocketRequest(w *websocket.Conn) {
 		}
 		Rooms[room].RUnlock()
 	}
-}
-
-type byteReader struct {
-	io.Reader
-}
-
-func (br *byteReader) ReadByte() (byte, error) {
-	var b [1]byte
-	if _, err := br.Read(b[:]); err != nil {
-		return 0, err
-	}
-	return b[0], nil
 }

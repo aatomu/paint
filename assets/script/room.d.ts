@@ -15,65 +15,53 @@ type PointerConfiguration = {
   data: string;
 };
 
-type PacketEvent = EventMouse | EventObjectAdd | EventObjectRemove | EventBoardClear;
-
-type EventMouse = {
-  timestamp: string;
+type PacketEvent = {
+  eventId: number;
+  timestamp: number;
   user: string;
-  operation: "mouse";
-  data: {
-    pos: [number, number];
-  };
-};
-
-type EventObjectAdd = {
-  timestamp: string;
-  user: string;
-  operation: "add";
-  data: objectPen | objectLine | objectStamp;
-};
-
-type objectPen = {
-  type: "pen";
-  id: string;
-  bold: number;
-  color: string;
-  opacity: number;
-  d: string;
-};
-
-type objectLine = {
-  type: "line";
-  id: string;
-  bold: number;
-  color: string;
-  opacity: number;
-  start: [number, number];
-  end: [number, number];
-};
-
-type objectStamp = {
-  type: "stamp";
-  id: string;
-  bold: number;
-  color: string;
-  opacity: number;
-  pos: [number, number];
-  text: string[];
-};
-
-type EventObjectRemove = {
-  timestamp: string;
-  user: string;
-  operation: "remove";
-  data: {
-    target: string;
-  };
-};
-
-type EventBoardClear = {
-  timestamp: string;
-  user: string;
-  operation: "clear";
-  data: null;
-};
+} & (
+  | {
+      operation: "mouse";
+      data: {
+        posX: number;
+        posY: number;
+      };
+    }
+  | {
+      operation: "objectAdd";
+      data: {
+        id: string;
+        bold: number;
+        color: string;
+        opacity: number;
+      } & (
+        | {
+            type: "pen";
+            d: string;
+          }
+        | {
+            type: "line";
+            startX: number;
+            startY: number;
+            endX: number;
+            endY: number;
+          }
+        | {
+            type: "stamp";
+            posX: number;
+            posY: number;
+            text: string;
+          }
+      );
+    }
+  | {
+      operation: "objectRemove";
+      data: {
+        target: string;
+      };
+    }
+  | {
+      operation: "boardClear";
+      data?: null;
+    }
+);
