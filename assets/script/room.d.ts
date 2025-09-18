@@ -15,9 +15,9 @@ type PointerConfiguration = {
   data: string;
 };
 
-type Packet = PacketMouse | PacketObjectAdd | PacketObjectRemove | PacketBoardClear;
+type PacketEvent = EventMouse | EventObjectAdd | EventObjectRemove | EventBoardClear;
 
-type PacketMouse = {
+type EventMouse = {
   timestamp: string;
   user: string;
   operation: "mouse";
@@ -26,7 +26,7 @@ type PacketMouse = {
   };
 };
 
-type PacketObjectAdd = {
+type EventObjectAdd = {
   timestamp: string;
   user: string;
   operation: "add";
@@ -62,7 +62,7 @@ type objectStamp = {
   text: string[];
 };
 
-type PacketObjectRemove = {
+type EventObjectRemove = {
   timestamp: string;
   user: string;
   operation: "remove";
@@ -71,10 +71,9 @@ type PacketObjectRemove = {
   };
 };
 
-type PacketBoardClear = {
+type EventBoardClear = {
   timestamp: string;
   user: string;
   operation: "clear";
   data: null;
 };
-
