@@ -1,14 +1,14 @@
 package main
 
 import (
+	"bytes"
 	"database/sql"
-	"encoding/binary"
-	"io"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"sync"
 	"time"
 
@@ -75,13 +75,6 @@ func WebsocketRequest(w *websocket.Conn) {
 	}
 	id := time.Now().UnixNano()
 
-	c, err := w.Request().Cookie("name")
-	if err != nil {
-		w.Close()
-		return
-	}
-	username := c.Value
-
 	// Board check
 	boardId, err := GetBoardId(room)
 	if err != nil {
@@ -117,29 +110,20 @@ func WebsocketRequest(w *websocket.Conn) {
 		w.Close()
 	}()
 
-	br := &byteReader{w}
+	var packet string
 	for {
-		size, err := binary.ReadUvarint(br)
-		if err != nil {
-			return
-		}
-		buf := make([]byte, size)
-
-		_, err = io.ReadFull(w, buf)
-		if err != nil {
-			return
-		}
+		websocket.Message.Receive(w, &packet)
 
 		// MARK: Validation
 		var event PacketEvent
-		err = NewDecoder(string(buf)).Decode(&event)
+		err = NewDecoder(strings.NewReader(packet)).Decode(&event)
 		if err != nil {
 			// ! Invalid Event
 			w.Write([]byte(err.Error()))
 			continue
 		}
 
-		dataDecoder := NewDecoder(event.Data)
+		dataDecoder := NewDecoder(bytes.NewReader(event.Data))
 		switch event.Operation {
 		case "mouse": // MARK: >Mouse
 			{
@@ -162,7 +146,7 @@ func WebsocketRequest(w *websocket.Conn) {
 				}
 
 				// Property check
-				propertyDecoder := NewDecoder(create.Property)
+				propertyDecoder := NewDecoder(bytes.NewReader(create.Property))
 				switch create.Type {
 				case "pen":
 					{
@@ -211,7 +195,7 @@ func WebsocketRequest(w *websocket.Conn) {
 				INSERT INTO event 
 					(id, board_id, element_id, username, operation, timestamp)
 					VALUES (?, ?, ?, ?, ?, ?)`,
-					eventId, boardId, create.Id, username, "create", time.Now().Unix())
+					eventId, boardId, create.Id, event.Name, "create", time.Now().Unix())
 				if err != nil {
 					tx.Rollback()
 					// ! SQL Insert Event Error
@@ -258,7 +242,7 @@ func WebsocketRequest(w *websocket.Conn) {
 				INSERT INTO event 
 					(id, board_id, element_id, username, operation, timestamp)
 					VALUES (?, ?, ?, ?, ?, ?)`,
-					eventId, boardId, delete.Target, username, "delete", time.Now().Unix())
+					eventId, boardId, delete.Target, event.Name, "delete", time.Now().Unix())
 				if err != nil {
 					tx.Rollback()
 					// ! SQL Insert Event Error
@@ -304,7 +288,7 @@ func WebsocketRequest(w *websocket.Conn) {
 		// Packet Transfer
 		Rooms[room].RLock()
 		for _, v := range Rooms[room].Conn {
-			v.Write(buf)
+			websocket.Message.Send(v, packet)
 		}
 		Rooms[room].RUnlock()
 	}

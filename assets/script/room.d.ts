@@ -13,10 +13,12 @@ type PointerConfiguration = {
   prev: [number, number];
   current: string;
   data: string;
+  notify: number;
 };
 
 type PacketEvent = {
-  eventId: number;
+  id: string;
+  name: string;
 } & (
   | {
       operation: "mouse";
@@ -41,13 +43,13 @@ type PacketEvent = {
         | {
             type: "line";
             property: {
-              start: [number,number]
-              end: [number,number]
-            }
+              start: [number, number];
+              end: [number, number];
+            };
           }
         | {
             type: "stamp";
-            pos: [number,number]
+            pos: [number, number];
             text: string;
           }
       );

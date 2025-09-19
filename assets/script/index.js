@@ -21,3 +21,10 @@ input_join.addEventListener("click", () => {
     window.location.href = url.toString()
   }
 })
+
+window.addEventListener("DOMContentLoaded", () => {
+  const name = getCookie("name")
+  if (name) {
+    input_name.value = name
+  }
+})

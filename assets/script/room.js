@@ -42,6 +42,7 @@ const pointer = {
   prev: [0, 0],
   current: "",
   data: "",
+  notify: 0
 }
 
 /** @type {WebSocket|null} */
@@ -92,6 +93,24 @@ function pointerEvent(event) {
   if (!isDown && pointer.isDownPrev) {
     pointerUp(event)
     callback = "up"
+  }
+
+  pointer.notify++
+  if (pointer.notify > 50) {
+    pointer.notify = 0
+    /** @type {PacketEvent} */
+    var mouse = {
+      id: `mouse-${(new Date()).getTime()}`,
+      name: getCookie("name") ?? "",
+      operation: "mouse",
+      data: {
+        pos: [
+          (event.clientX - boardConfig.offset[0]),
+          (event.clientY - boardConfig.offset[1])
+        ]
+      }
+    }
+    sendMessage(JSON.stringify(mouse))
   }
 
   console.log(JSON.stringify({ "event": "pointer", "callback": callback, "mode": pointer.mode }))
@@ -333,22 +352,10 @@ window.addEventListener("DOMContentLoaded", () => {
 
 
 /**
- * 数値を可変長整数（varint）としてArrayBufferにエンコードします。
- * @param {number} value
- * @returns {ArrayBuffer}
+ * @param {string} text
+ * @returns {void}
  */
-function encodeVarInt(value) {
-  if (value < 0) {
-    throw new Error("負の整数はvarintにエンコードできません。");
-  }
-
-  const bytes = [];
-  while (value >= 0x80) {
-    bytes.push((value & 0x7F) | 0x80);
-    value >>= 7;
-  }
-  bytes.push(value);
-
-  const buffer = new Uint8Array(bytes);
-  return buffer.buffer;
+function sendMessage(text) {
+  if (!ws) return
+  ws.send(text)
 }

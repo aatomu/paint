@@ -50,11 +50,12 @@ type Room struct {
 
 // MARK: Packet
 type PacketEvent struct {
-	Id string `json:"id"`
+	Id   string `json:"id"`
+	Name string `json:"name"`
 	// c=>s :"mouse"|"create"|"delete"|"undo"|"redo"|"clear"
 	// s=>c :"success"|"error"|"transfer"
-	Operation string `json:"operation"`
-	Data      string `json:"data"`
+	Operation string          `json:"operation"`
+	Data      json.RawMessage `json:"data"`
 }
 
 type PacketEventMouse struct {
@@ -62,12 +63,12 @@ type PacketEventMouse struct {
 }
 
 type PacketEventCreate struct {
-	Id       string  `json:"id"`
-	Type     string  `json:"type"` // "pen"|"line"|"stamp"
-	Bold     float64 `json:"bold"`
-	Color    string  `json:"color"`
-	Opacity  float64 `json:"opacity"`
-	Property string  `json:"property"`
+	Id       string          `json:"id"`
+	Type     string          `json:"type"` // "pen"|"line"|"stamp"
+	Bold     float64         `json:"bold"`
+	Color    string          `json:"color"`
+	Opacity  float64         `json:"opacity"`
+	Property json.RawMessage `json:"property"`
 }
 
 type PacketEventDelete struct {
@@ -153,21 +154,8 @@ func GetBoardId(name string) (id string, err error) {
 	return
 }
 
-// MARK: Websocket
-type byteReader struct {
-	io.Reader
-}
-
-func (br *byteReader) ReadByte() (byte, error) {
-	var b [1]byte
-	if _, err := br.Read(b[:]); err != nil {
-		return 0, err
-	}
-	return b[0], nil
-}
-
-func NewDecoder(t string) (d *json.Decoder) {
-	d = json.NewDecoder(strings.NewReader(t))
+func NewDecoder(r io.Reader) (d *json.Decoder) {
+	d = json.NewDecoder(r)
 	d.DisallowUnknownFields()
 	return
 }
