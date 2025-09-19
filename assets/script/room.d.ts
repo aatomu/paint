@@ -17,18 +17,15 @@ type PointerConfiguration = {
 
 type PacketEvent = {
   eventId: number;
-  timestamp: number;
-  user: string;
 } & (
   | {
       operation: "mouse";
       data: {
-        posX: number;
-        posY: number;
+        pos: [number, number];
       };
     }
   | {
-      operation: "objectAdd";
+      operation: "create";
       data: {
         id: string;
         bold: number;
@@ -37,31 +34,40 @@ type PacketEvent = {
       } & (
         | {
             type: "pen";
-            d: string;
+            property: {
+              d: string;
+            };
           }
         | {
             type: "line";
-            startX: number;
-            startY: number;
-            endX: number;
-            endY: number;
+            property: {
+              start: [number,number]
+              end: [number,number]
+            }
           }
         | {
             type: "stamp";
-            posX: number;
-            posY: number;
+            pos: [number,number]
             text: string;
           }
       );
     }
   | {
-      operation: "objectRemove";
+      operation: "delete";
       data: {
         target: string;
       };
     }
   | {
-      operation: "boardClear";
-      data?: null;
+      operation: "undo";
+      data: {
+        target: string;
+      };
+    }
+  | {
+      operation: "redo";
+      data: {
+        target: string;
+      };
     }
 );
