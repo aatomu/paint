@@ -44,6 +44,8 @@ const pointer = {
   data: "",
 }
 
+/** @type {WebSocket|null} */
+var ws = null
 
 window.addEventListener("wheel", (event) => {
 
@@ -306,14 +308,11 @@ window.addEventListener("DOMContentLoaded", () => {
 
   const url = new URL(window.location.href)
   url.pathname = "/ws"
-  const ws = new WebSocket(url.href)
+  ws = new WebSocket(url.href)
 
   /** @param {Event} event*/
   ws.addEventListener("open", (event) => {
     console.log(JSON.stringify({ "event": "websocket", "callback": "open" }), event)
-    const text = "aaaaa"
-    ws.send(encodeVarInt(text.length))
-    ws.send(text)
   })
   /** @param {MessageEvent} event*/
   ws.addEventListener("message", (event) => {
