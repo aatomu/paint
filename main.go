@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
 	_ "github.com/mattn/go-sqlite3"
 	"golang.org/x/net/websocket"
 )
@@ -20,21 +21,24 @@ var (
 	Listen    = ":1026"
 	Rooms     = map[string]*Room{}
 	RoomsLock = sync.RWMutex{}
+	DB        *sql.DB
 )
 
+// MARK: Main
 func main() {
 	// Work dir
 	_, file, _, _ := runtime.Caller(0)
 	os.Chdir(filepath.Dir(file))
 
 	// Open SQL
-	db, err := sql.Open("sqlite3", "./rooms.db")
+	var err error
+	DB, err = sql.Open("sqlite3", "./rooms.db")
 	if err != nil {
 		log.Panicf("Failed Open Database: %v", err)
 	}
-	defer db.Close()
+	defer DB.Close()
 
-	err = CreateTables(db)
+	err = CreateTables(DB)
 	if err != nil {
 		log.Panicf("Failed Open Database: %v", err)
 	}
@@ -53,6 +57,7 @@ func main() {
 	}
 }
 
+// MARK: HTTP middle
 func middleware(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Printf("IP:%s, Method:%s, URI:%s, Header:%v", r.RemoteAddr, r.Method, r.URL, r.Header)
@@ -61,6 +66,7 @@ func middleware(h http.Handler) http.Handler {
 	})
 }
 
+// MARK: Websocket
 func WebsocketRequest(w *websocket.Conn) {
 	room := w.Request().URL.Query().Get("id")
 	if room == "" {
@@ -68,6 +74,21 @@ func WebsocketRequest(w *websocket.Conn) {
 		return
 	}
 	id := time.Now().UnixNano()
+
+	c, err := w.Request().Cookie("name")
+	if err != nil {
+		w.Close()
+		return
+	}
+	username := c.Value
+
+	// Board check
+	boardId, err := GetBoardId(room)
+	if err != nil {
+		w.Close()
+		log.Println("SQL Error in \"func GetBoardId()\": ", err)
+		return
+	}
 
 	// Save session
 	RoomsLock.Lock()
@@ -78,16 +99,21 @@ func WebsocketRequest(w *websocket.Conn) {
 		}
 		Rooms[room] = r
 	}
-	RoomsLock.Unlock()
 
 	r.Lock()
 	r.Conn[id] = w
 	r.Unlock()
+	RoomsLock.Unlock()
 
 	defer func() {
 		r.Lock()
 		delete(r.Conn, id)
 		r.Unlock()
+		if len(r.Conn) == 0 {
+			RoomsLock.Lock()
+			delete(Rooms, room)
+			RoomsLock.Unlock()
+		}
 		w.Close()
 	}()
 
