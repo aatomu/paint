@@ -104,6 +104,178 @@ func WebsocketRequest(w *websocket.Conn) {
 			return
 		}
 
+		// MARK: Validation
+		var event PacketEvent
+		err = NewDecoder(string(buf)).Decode(&event)
+		if err != nil {
+			// ! Invalid Event
+			w.Write([]byte(err.Error()))
+			continue
+		}
+
+		dataDecoder := NewDecoder(event.Data)
+		switch event.Operation {
+		case "mouse": // MARK: >Mouse
+			{
+				err = dataDecoder.Decode(&PacketEventMouse{})
+				if err != nil {
+					// ! Invalid Event Property
+					w.Write([]byte(err.Error()))
+					continue
+				}
+			}
+
+		case "create": // MARK: >Create
+			{
+				var create PacketEventCreate
+				err = dataDecoder.Decode(&create)
+				if err != nil {
+					// ! Invalid Event Property
+					w.Write([]byte(err.Error()))
+					continue
+				}
+
+				// Property check
+				propertyDecoder := NewDecoder(create.Property)
+				switch create.Type {
+				case "pen":
+					{
+						err = propertyDecoder.Decode(&PropertyPen{})
+						if err != nil {
+							// ! Invalid Element Property
+							w.Write([]byte(err.Error()))
+							continue
+						}
+					}
+				case "line":
+					{
+						err = propertyDecoder.Decode(&PropertyLine{})
+						if err != nil {
+							// ! Invalid Element Property
+							w.Write([]byte(err.Error()))
+							continue
+						}
+					}
+				case "stamp":
+					{
+						err = propertyDecoder.Decode(&PropertyStamp{})
+						if err != nil {
+							// ! Invalid Element Property
+							w.Write([]byte(err.Error()))
+							continue
+						}
+					}
+				default:
+					{
+						// ! Invalid Element Property
+						w.Write([]byte("unknown type"))
+						continue
+					}
+				}
+
+				// Write SQL
+				eventId := uuid.New().String()
+				tx, err := DB.Begin()
+				if err != nil {
+					// ! SQL transaction Error
+					w.Write([]byte(err.Error()))
+					continue
+				}
+				_, err = tx.Exec(`
+				INSERT INTO event 
+					(id, board_id, element_id, username, operation, timestamp)
+					VALUES (?, ?, ?, ?, ?, ?)`,
+					eventId, boardId, create.Id, username, "create", time.Now().Unix())
+				if err != nil {
+					tx.Rollback()
+					// ! SQL Insert Event Error
+					w.Write([]byte(err.Error()))
+					continue
+				}
+				_, err = tx.Exec(`
+				INSERT INTO elements 
+					(id, board_id, type, bold, color, opacity, property, deleted)
+					VALUES (?, ?, ?, ?, ?, ?, ?, 0)`,
+					create.Id, boardId, create.Type, create.Bold, create.Color, create.Opacity, create.Property)
+				if err != nil {
+					tx.Rollback()
+					// ! SQL Insert Element Error
+					w.Write([]byte(err.Error()))
+					continue
+				}
+
+				err = tx.Commit()
+				if err != nil {
+					// ! SQL Commit Error
+					w.Write([]byte(err.Error()))
+					continue
+				}
+			}
+		case "delete": // MARK: >Delete
+			{
+				var delete PacketEventDelete
+				err = dataDecoder.Decode(&delete)
+				if err != nil {
+					// ! Invalid Event Property
+					w.Write([]byte(err.Error()))
+					continue
+				}
+				// Write SQL
+				eventId := uuid.New().String()
+				tx, err := DB.Begin()
+				if err != nil {
+					// ! SQL transaction Error
+					w.Write([]byte(err.Error()))
+					continue
+				}
+				_, err = tx.Exec(`
+				INSERT INTO event 
+					(id, board_id, element_id, username, operation, timestamp)
+					VALUES (?, ?, ?, ?, ?, ?)`,
+					eventId, boardId, delete.Target, username, "delete", time.Now().Unix())
+				if err != nil {
+					tx.Rollback()
+					// ! SQL Insert Event Error
+					w.Write([]byte(err.Error()))
+					continue
+				}
+				var result sql.Result
+				result, err = tx.Exec(`
+				UPDATE elements 
+					SET deleted = 1
+					WHERE id = ? AND board_id = ?`,
+					delete.Target, boardId)
+				if err != nil {
+					tx.Rollback()
+					// ! SQL Update Element Error
+					w.Write([]byte(err.Error()))
+					continue
+				}
+
+				var n int64
+				n, err = result.RowsAffected()
+				if err != nil || n != 1 {
+					tx.Rollback()
+					// ! SQL Target Missing Error
+					w.Write([]byte(err.Error()))
+					continue
+				}
+
+				err = tx.Commit()
+				if err != nil {
+					// ! SQL Commit Error
+					w.Write([]byte(err.Error()))
+					continue
+				}
+			}
+		default:
+			{
+				// ! Invalid Event Type
+				continue
+			}
+		}
+
+		// Packet Transfer
 		Rooms[room].RLock()
 		for _, v := range Rooms[room].Conn {
 			v.Write(buf)
