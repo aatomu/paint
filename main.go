@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"sync"
 	"time"
 
@@ -73,6 +74,15 @@ func main() {
 func middleware(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		logger.Info("new request", "IP", r.RemoteAddr, "Method", r.Method, "URI", r.URL, "Header", r.Header)
+
+		if strings.HasPrefix(r.URL.Path, "/room") {
+			if _, err := r.Cookie("name"); err != nil {
+				logger.Info("cookie(\"name\") is not found, 307redirect", "IP", r.RemoteAddr, "Transfer", "/")
+				http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+				return
+			}
+		}
+
 		// Compute
 		h.ServeHTTP(w, r)
 	})
