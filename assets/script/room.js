@@ -95,22 +95,22 @@ function pointerEvent(event) {
     callback = "up"
   }
 
-  pointer.notify++
-  if (pointer.notify > 50) {
-    pointer.notify = 0
-    /** @type {PacketEvent} */
-    var mouse = {
-      id: `mouse-${(new Date()).getTime()}`,
-      name: getCookie("name") ?? "",
-      operation: "mouse",
-      data: {
-        pos: [
-          (event.clientX - boardConfig.offset[0]),
-          (event.clientY - boardConfig.offset[1])
-        ]
-      }
+  if (!(isDown && pointer.mode == "move")) {
+    pointer.notify++
+    if (pointer.notify > 50) {
+      pointer.notify = 0
+      sendPacket({
+        packet_id: `mouse-${(new Date()).getTime()}`,
+        name: getCookie("name") ?? "",
+        operation: "mouse",
+        data: {
+          pos: [
+            (event.clientX - boardConfig.offset[0]),
+            (event.clientY - boardConfig.offset[1])
+          ]
+        }
+      })
     }
-    sendMessage(JSON.stringify(mouse))
   }
 
   console.log(JSON.stringify({ "event": "pointer", "callback": callback, "mode": pointer.mode }))
@@ -353,9 +353,15 @@ window.addEventListener("DOMContentLoaded", () => {
 
 /**
  * @param {string} text
- * @returns {void}
  */
 function sendMessage(text) {
   if (!ws) return
   ws.send(text)
+}
+
+/**
+ * @param {PacketEvent} packet
+ */
+function sendPacket(packet) {
+  sendMessage(JSON.stringify(packet))
 }
