@@ -50,8 +50,8 @@ type Room struct {
 
 // MARK: Packet
 type PacketEvent struct {
-	Id   string `json:"id"`
-	Name string `json:"name"`
+	PacketId string `json:"packet_id"`
+	Name     string `json:"name"`
 	// c=>s :"mouse"|"create"|"delete"|"undo"|"redo"|"clear"
 	// s=>c :"success"|"error"|"transfer"
 	Operation string          `json:"operation"`
@@ -63,12 +63,12 @@ type PacketEventMouse struct {
 }
 
 type PacketEventCreate struct {
-	Id       string          `json:"id"`
-	Type     string          `json:"type"` // "pen"|"line"|"stamp"
-	Bold     float64         `json:"bold"`
-	Color    string          `json:"color"`
-	Opacity  float64         `json:"opacity"`
-	Property json.RawMessage `json:"property"`
+	ElementId string          `json:"element_id"`
+	Type      string          `json:"type"` // "pen"|"line"|"stamp"
+	Bold      float64         `json:"bold"`
+	Color     string          `json:"color"`
+	Opacity   float64         `json:"opacity"`
+	Property  json.RawMessage `json:"property"`
 }
 
 type PacketEventDelete struct {
@@ -83,6 +83,16 @@ type PacketEventRedo struct {
 	Target string `json:"target"`
 }
 
+type PacketEventClear struct{}
+
+type PacketEventSuccess struct {
+	PacketId string `json:"packet_id"`
+}
+type PacketEventError struct {
+	PacketId string `json:"packet_id"`
+	Message  string `json:"message"`
+}
+
 // MARK: Generic
 type PropertyPen struct {
 	D string `json:"d"`
@@ -93,14 +103,14 @@ type PropertyLine struct {
 }
 type PropertyStamp struct {
 	Pos  [2]float64 `json:"pos"`
-	Text string     `json:"text"`
+	Text string     `json:"text"` // ["aaa","bbb", ...]
 }
 
 // MARK: SQL commands
 func CreateTables(db *sql.DB) error {
 	_, err := db.Exec(`
 	CREATE TABLE IF NOT EXISTS boards (
-		id               TEXT    PRIMARY KEY,
+		board_id               TEXT    PRIMARY KEY,
 		name             TEXT    NOT NULL,
 		create_timestamp INTEGER NOT NULL
 	)`)
@@ -110,16 +120,16 @@ func CreateTables(db *sql.DB) error {
 
 	_, err = db.Exec(`
 	CREATE TABLE IF NOT EXISTS elements (
-		id       TEXT    NOT NULL,
-		board_id TEXT    NOT NULL,
-		type     TEXT    NOT NULL,
-		bold     REAL    NOT NULL,
-		color    TEXT    NOT NULL,
-		opacity  REAL    NOT NULL,
-		property TEXT    NOT NULL,
-		deleted  INTEGER NOT NULL,
-		PRIMARY KEY (id,board_id),
-		FOREIGN KEY(board_id) REFERENCES boards(id)
+		element_id TEXT    NOT NULL,
+		board_id   TEXT    NOT NULL,
+		type       TEXT    NOT NULL,
+		bold       REAL    NOT NULL,
+		color      TEXT    NOT NULL,
+		opacity    REAL    NOT NULL,
+		property   TEXT    NOT NULL,
+		deleted    INTEGER NOT NULL,
+		PRIMARY KEY (element_id,board_id),
+		FOREIGN KEY(board_id) REFERENCES boards(board_id)
 	)`)
 	if err != nil {
 		return fmt.Errorf("%s(in elements)", err.Error())
@@ -127,14 +137,14 @@ func CreateTables(db *sql.DB) error {
 
 	_, err = db.Exec(`
 	CREATE TABLE IF NOT EXISTS events (
-		id         TEXT    PRIMARY KEY,
+		event_id   TEXT    PRIMARY KEY,
 		board_id   TEXT    NOT NULL,
 		element_id TEXT,
 		username   TEXT    NOT NULL,
 		operation  TEXT    NOT NULL,
 		timestamp  INTEGER NOT NULL,
-		FOREIGN KEY(board_id) REFERENCES boards(id),
-		FOREIGN KEY(element_id) REFERENCES elements(id)
+		FOREIGN KEY(board_id) REFERENCES boards(board_id),
+		FOREIGN KEY(element_id) REFERENCES elements(element_id)
 	)`)
 	if err != nil {
 		return fmt.Errorf("%s(in events)", err.Error())
@@ -143,12 +153,12 @@ func CreateTables(db *sql.DB) error {
 	return nil
 }
 
-func GetBoardId(name string) (id string, err error) {
-	err = DB.QueryRow("SELECT id FROM boards WHERE name = ?", name).Scan(&id)
+func GetBoardId(name string) (boardId string, err error) {
+	err = DB.QueryRow("SELECT board_id FROM boards WHERE name = ?", name).Scan(&boardId)
 	if err == sql.ErrNoRows {
-		id = uuid.New().String()
+		boardId = uuid.New().String()
 		now := time.Now().Unix()
-		_, err = DB.Exec("INSERT INTO boards (id, name, create_timestamp) VALUES (?, ?, ?)", id, name, now)
+		_, err = DB.Exec("INSERT INTO boards (board_id, name, create_timestamp) VALUES (?, ?, ?)", boardId, name, now)
 		return
 	}
 	return

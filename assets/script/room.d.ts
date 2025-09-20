@@ -16,8 +16,12 @@ type PointerConfiguration = {
   notify: number;
 };
 
+// MARK: Packet
+// operation:
+//   c=>s :"mouse"|"create"|"delete"|"undo"|"redo"|"clear"
+//   s=>c :"success"|"error"|"transfer"
 type PacketEvent = {
-  id: string;
+  packet_id: string;
   name: string;
 } & (
   | {
@@ -29,7 +33,7 @@ type PacketEvent = {
   | {
       operation: "create";
       data: {
-        id: string;
+        element_id: string;
         bold: number;
         color: string;
         opacity: number;
@@ -72,4 +76,78 @@ type PacketEvent = {
         target: string;
       };
     }
+  | {
+      operation: "clear";
+    }
+  | {
+      operation: "success";
+      data: {
+        packet_id: string;
+      };
+    }
+  | {
+      operation: "error";
+      data: {
+        packet_id: string;
+        message: string;
+      };
+    }
 );
+
+type PacketEventMouse = {
+  pos: [number, number];
+};
+
+type PacketEventCreate = {
+  element_id: string;
+  bold: number;
+  color: string;
+  opacity: number;
+} & (
+  | {
+      type: "pen";
+      property: PropertyPen;
+    }
+  | {
+      type: "line";
+      property: PropertyLine;
+    }
+  | {
+      type: "stamp";
+      property: PropertyStamp;
+    }
+);
+
+type PacketEventDelete = {
+  target: string;
+};
+type PacketEventUndo = {
+  target: string;
+};
+type PacketEventRedo = {
+  target: string;
+};
+type PacketEventClear = {};
+
+type PacketEventSuccess = {
+  packet_id: string;
+};
+
+type PacketEventError = {
+  packet_id: string;
+  message: string;
+};
+
+// MARK: Generic
+type PropertyPen = {
+  d: string;
+};
+type PropertyLine = {
+  start: [number, number];
+  end: [number, number];
+};
+
+type PropertyStamp = {
+  pos: [number, number];
+  text: string; // ["aaa","bbb", ...]
+};
