@@ -106,7 +106,6 @@ type PropertyStamp struct {
 	Text string     `json:"text"` // ["aaa","bbb", ...]
 }
 
-// MARK: SQL commands
 func CreateTables(db *sql.DB) error {
 	_, err := db.Exec(`
 	CREATE TABLE IF NOT EXISTS boards (
@@ -168,4 +167,10 @@ func NewDecoder(r io.Reader) (d *json.Decoder) {
 	d = json.NewDecoder(r)
 	d.DisallowUnknownFields()
 	return
+}
+
+func (p PacketEvent) Set(d any) PacketEvent {
+	data, _ := json.Marshal(d)
+	p.Data = data
+	return p
 }

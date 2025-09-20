@@ -3,17 +3,17 @@ package main
 import (
 	"bytes"
 	"database/sql"
-	"log"
+	"encoding/json"
 	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/google/uuid"
 	_ "github.com/mattn/go-sqlite3"
+	"golang.org/x/exp/slog"
 	"golang.org/x/net/websocket"
 )
 
@@ -22,6 +22,16 @@ var (
 	Rooms     = map[string]*Room{}
 	RoomsLock = sync.RWMutex{}
 	DB        *sql.DB
+	logger    = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		AddSource: true,
+		Level:     slog.LevelDebug,
+		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
+			if a.Key == slog.TimeKey {
+				a.Value = slog.StringValue(a.Value.Time().Format("2006-01-02T15:04:05.000MST"))
+			}
+			return a
+		},
+	}))
 )
 
 // MARK: Main
@@ -34,13 +44,15 @@ func main() {
 	var err error
 	DB, err = sql.Open("sqlite3", "./rooms.db")
 	if err != nil {
-		log.Panicf("Failed Open Database: %v", err)
+		logger.Error("Failed open database", slog.Group("message", err))
+		return
 	}
 	defer DB.Close()
 
 	err = CreateTables(DB)
 	if err != nil {
-		log.Panicf("Failed Open Database: %v", err)
+		logger.Error("Failed create table", slog.Group("message", err))
+		return
 	}
 
 	// Http handle
@@ -49,10 +61,10 @@ func main() {
 	http.Handle("/ws", middleware(websocket.Handler(WebsocketRequest)))
 
 	// Boot Server
-	log.Println("Http Server Boot")
+	logger.Info("Listen http server boot")
 	err = http.ListenAndServe(Listen, nil)
 	if err != nil {
-		log.Panicf("Failed Listen Http Server: %v", err)
+		logger.Error("Failed listen http server", slog.Group("message", err))
 		return
 	}
 }
@@ -60,7 +72,7 @@ func main() {
 // MARK: HTTP middle
 func middleware(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("IP:%s, Method:%s, URI:%s, Header:%v", r.RemoteAddr, r.Method, r.URL, r.Header)
+		logger.Info("new request", "IP", r.RemoteAddr, "Method", r.Method, "URI", r.URL, "Header", r.Header)
 		// Compute
 		h.ServeHTTP(w, r)
 	})
@@ -73,13 +85,13 @@ func WebsocketRequest(w *websocket.Conn) {
 		w.Close()
 		return
 	}
-	id := time.Now().UnixNano()
+	connId := time.Now().UnixNano()
 
 	// Board check
 	boardId, err := GetBoardId(room)
 	if err != nil {
+		logger.Error("Failed board get/create", "message", err)
 		w.Close()
-		log.Println("SQL Error in \"func GetBoardId()\": ", err)
 		return
 	}
 
@@ -94,13 +106,13 @@ func WebsocketRequest(w *websocket.Conn) {
 	}
 
 	r.Lock()
-	r.Conn[id] = w
+	r.Conn[connId] = w
 	r.Unlock()
 	RoomsLock.Unlock()
 
 	defer func() {
 		r.Lock()
-		delete(r.Conn, id)
+		delete(r.Conn, connId)
 		r.Unlock()
 		if len(r.Conn) == 0 {
 			RoomsLock.Lock()
@@ -111,15 +123,26 @@ func WebsocketRequest(w *websocket.Conn) {
 	}()
 
 	var packet string
+	var source = w.Request().RemoteAddr
 	for {
 		websocket.Message.Receive(w, &packet)
+		logger.Info("new message", "IP", source, "ID", connId, "packet", packet)
 
 		// MARK: Validation
 		var event PacketEvent
-		err = NewDecoder(strings.NewReader(packet)).Decode(&event)
+		err = json.Unmarshal([]byte(packet), &event)
 		if err != nil {
 			// ! Invalid Event
-			w.Write([]byte(err.Error()))
+			websocket.JSON.Send(w, PacketEvent{
+				PacketId:  "notify",
+				Name:      "server",
+				Operation: "error",
+			}.Set(
+				PacketEventError{
+					PacketId: event.PacketId,
+					Message:  "PacketEvent marshal error.",
+				}))
+			logger.Debug("PacketEvent marshal error", "ID", connId, "message", event)
 			continue
 		}
 
@@ -130,9 +153,28 @@ func WebsocketRequest(w *websocket.Conn) {
 				err = dataDecoder.Decode(&PacketEventMouse{})
 				if err != nil {
 					// ! Invalid Event Property
-					w.Write([]byte(err.Error()))
+					websocket.JSON.Send(w,
+						PacketEvent{
+							PacketId:  "notify",
+							Name:      "server",
+							Operation: "error",
+						}.Set(
+							PacketEventError{
+								PacketId: event.PacketId,
+								Message:  "PacketEventMouse marshal error.",
+							}))
+					logger.Debug("PacketEventMouse marshal error", "ID", connId, "message", event)
 					continue
 				}
+				websocket.JSON.Send(w,
+					PacketEvent{
+						PacketId:  "notifty",
+						Name:      "server",
+						Operation: "success",
+					}.Set(
+						PacketEventSuccess{
+							PacketId: event.PacketId,
+						}))
 			}
 
 		case "create": // MARK: >Create
@@ -141,46 +183,67 @@ func WebsocketRequest(w *websocket.Conn) {
 				err = dataDecoder.Decode(&create)
 				if err != nil {
 					// ! Invalid Event Property
-					w.Write([]byte(err.Error()))
+					websocket.JSON.Send(w,
+						PacketEvent{
+							PacketId:  "notify",
+							Name:      "server",
+							Operation: "error",
+						}.Set(
+							PacketEventError{
+								PacketId: event.PacketId,
+								Message:  "PacketEventCreate marshal error.",
+							}))
+					logger.Debug("PacketEventCreate marshal error", "ID", connId, "message", event)
 					continue
 				}
 
 				// Property check
 				propertyDecoder := NewDecoder(bytes.NewReader(create.Property))
+				var propertyError error
 				switch create.Type {
 				case "pen":
 					{
-						err = propertyDecoder.Decode(&PropertyPen{})
-						if err != nil {
-							// ! Invalid Element Property
-							w.Write([]byte(err.Error()))
-							continue
-						}
+						propertyError = propertyDecoder.Decode(&PropertyPen{})
 					}
 				case "line":
 					{
-						err = propertyDecoder.Decode(&PropertyLine{})
-						if err != nil {
-							// ! Invalid Element Property
-							w.Write([]byte(err.Error()))
-							continue
-						}
+						propertyError = propertyDecoder.Decode(&PropertyLine{})
 					}
 				case "stamp":
 					{
-						err = propertyDecoder.Decode(&PropertyStamp{})
-						if err != nil {
-							// ! Invalid Element Property
-							w.Write([]byte(err.Error()))
-							continue
-						}
+						propertyError = propertyDecoder.Decode(&PropertyStamp{})
 					}
 				default:
 					{
-						// ! Invalid Element Property
-						w.Write([]byte("unknown type"))
+						// ! Invalid Element Type
+						websocket.JSON.Send(w,
+							PacketEvent{
+								PacketId:  "notify",
+								Name:      "server",
+								Operation: "",
+							}.Set(
+								PacketEventError{
+									PacketId: event.PacketId,
+									Message:  "PacketEventCreate.Type is unknown.",
+								}))
+						logger.Debug("PacketEventCreate.Type is unknown", "ID", connId, "message", create.Type)
 						continue
 					}
+				}
+				if propertyError != nil {
+					// ! Invalid Element Property
+					websocket.JSON.Send(w,
+						PacketEvent{
+							PacketId:  "notify",
+							Name:      "server",
+							Operation: "",
+						}.Set(
+							PacketEventError{
+								PacketId: event.PacketId,
+								Message:  "PacketEventCreate.Property marshal error.",
+							}))
+					logger.Debug("PacketEventCreate.Property marshal error", "ID", connId, "message", propertyError)
+					continue
 				}
 
 				// Write SQL
@@ -188,28 +251,62 @@ func WebsocketRequest(w *websocket.Conn) {
 				tx, err := DB.Begin()
 				if err != nil {
 					// ! SQL transaction Error
+					websocket.JSON.Send(w,
+						PacketEvent{
+							PacketId:  "notify",
+							Name:      "server",
+							Operation: "",
+						}.Set(
+							PacketEventError{
+								PacketId: event.PacketId,
+								Message:  "Save packet error",
+							}))
+					logger.Debug("SQL \"transaction start\" error", "ID", connId, "message", err)
 					w.Write([]byte(err.Error()))
 					continue
 				}
 				_, err = tx.Exec(`
 				INSERT INTO event 
-					(id, board_id, element_id, username, operation, timestamp)
+					(event_id, board_id, element_id, username, operation, timestamp)
 					VALUES (?, ?, ?, ?, ?, ?)`,
-					eventId, boardId, create.Id, event.Name, "create", time.Now().Unix())
+					eventId, boardId, create.ElementId, event.Name, "create", time.Now().Unix())
 				if err != nil {
 					tx.Rollback()
 					// ! SQL Insert Event Error
+					websocket.JSON.Send(w,
+						PacketEvent{
+							PacketId:  "notify",
+							Name:      "server",
+							Operation: "",
+						}.Set(
+							PacketEventError{
+								PacketId: event.PacketId,
+								Message:  "Save packet error",
+							}))
+					logger.Debug("SQL \"INSERT events\" error", "ID", connId, "message", err)
 					w.Write([]byte(err.Error()))
 					continue
 				}
+
 				_, err = tx.Exec(`
 				INSERT INTO elements 
-					(id, board_id, type, bold, color, opacity, property, deleted)
+					(element_id, board_id, type, bold, color, opacity, property, deleted)
 					VALUES (?, ?, ?, ?, ?, ?, ?, 0)`,
-					create.Id, boardId, create.Type, create.Bold, create.Color, create.Opacity, create.Property)
+					create.ElementId, boardId, create.Type, create.Bold, create.Color, create.Opacity, create.Property)
 				if err != nil {
 					tx.Rollback()
 					// ! SQL Insert Element Error
+					websocket.JSON.Send(w,
+						PacketEvent{
+							PacketId:  "notify",
+							Name:      "server",
+							Operation: "",
+						}.Set(
+							PacketEventError{
+								PacketId: event.PacketId,
+								Message:  "Save packet error",
+							}))
+					logger.Debug("SQL \"INSERT elements\" error", "ID", connId, "message", err)
 					w.Write([]byte(err.Error()))
 					continue
 				}
@@ -217,6 +314,17 @@ func WebsocketRequest(w *websocket.Conn) {
 				err = tx.Commit()
 				if err != nil {
 					// ! SQL Commit Error
+					websocket.JSON.Send(w,
+						PacketEvent{
+							PacketId:  "notify",
+							Name:      "server",
+							Operation: "",
+						}.Set(
+							PacketEventError{
+								PacketId: event.PacketId,
+								Message:  "Save packet error",
+							}))
+					logger.Debug("SQL \"commit\" error", "ID", connId, "message", err)
 					w.Write([]byte(err.Error()))
 					continue
 				}
@@ -227,7 +335,17 @@ func WebsocketRequest(w *websocket.Conn) {
 				err = dataDecoder.Decode(&delete)
 				if err != nil {
 					// ! Invalid Event Property
-					w.Write([]byte(err.Error()))
+					websocket.JSON.Send(w,
+						PacketEvent{
+							PacketId:  "notify",
+							Name:      "server",
+							Operation: "",
+						}.Set(
+							PacketEventError{
+								PacketId: event.PacketId,
+								Message:  "PacketEventDelete marshal error.",
+							}))
+					logger.Debug("PacketEventDelete marshal error", "ID", connId, "message", event)
 					continue
 				}
 				// Write SQL
@@ -235,17 +353,39 @@ func WebsocketRequest(w *websocket.Conn) {
 				tx, err := DB.Begin()
 				if err != nil {
 					// ! SQL transaction Error
+					websocket.JSON.Send(w,
+						PacketEvent{
+							PacketId:  "notify",
+							Name:      "server",
+							Operation: "",
+						}.Set(
+							PacketEventError{
+								PacketId: event.PacketId,
+								Message:  "Save packet error",
+							}))
+					logger.Debug("SQL \"transaction start\" error", "ID", connId, "message", err)
 					w.Write([]byte(err.Error()))
 					continue
 				}
 				_, err = tx.Exec(`
 				INSERT INTO event 
-					(id, board_id, element_id, username, operation, timestamp)
+					(event_id, board_id, element_id, username, operation, timestamp)
 					VALUES (?, ?, ?, ?, ?, ?)`,
 					eventId, boardId, delete.Target, event.Name, "delete", time.Now().Unix())
 				if err != nil {
 					tx.Rollback()
 					// ! SQL Insert Event Error
+					websocket.JSON.Send(w,
+						PacketEvent{
+							PacketId:  "notify",
+							Name:      "server",
+							Operation: "",
+						}.Set(
+							PacketEventError{
+								PacketId: event.PacketId,
+								Message:  "Save packet error",
+							}))
+					logger.Debug("SQL \"INSERT events\" error", "ID", connId, "message", err)
 					w.Write([]byte(err.Error()))
 					continue
 				}
@@ -253,11 +393,22 @@ func WebsocketRequest(w *websocket.Conn) {
 				result, err = tx.Exec(`
 				UPDATE elements 
 					SET deleted = 1
-					WHERE id = ? AND board_id = ?`,
+					WHERE element_id = ? AND board_id = ?`,
 					delete.Target, boardId)
 				if err != nil {
 					tx.Rollback()
 					// ! SQL Update Element Error
+					websocket.JSON.Send(w,
+						PacketEvent{
+							PacketId:  "notify",
+							Name:      "server",
+							Operation: "",
+						}.Set(
+							PacketEventError{
+								PacketId: event.PacketId,
+								Message:  "Save packet error",
+							}))
+					logger.Debug("SQL \"UPDATE elements\" error", "ID", connId, "message", err)
 					w.Write([]byte(err.Error()))
 					continue
 				}
@@ -266,7 +417,18 @@ func WebsocketRequest(w *websocket.Conn) {
 				n, err = result.RowsAffected()
 				if err != nil || n != 1 {
 					tx.Rollback()
-					// ! SQL Target Missing Error
+					// ! SQL Target Missin Error
+					websocket.JSON.Send(w,
+						PacketEvent{
+							PacketId:  "notify",
+							Name:      "server",
+							Operation: "",
+						}.Set(
+							PacketEventError{
+								PacketId: event.PacketId,
+								Message:  "Save packet error",
+							}))
+					logger.Debug("SQL \"rows affected != 1\" error", "ID", connId, "message", err)
 					w.Write([]byte(err.Error()))
 					continue
 				}
@@ -274,20 +436,45 @@ func WebsocketRequest(w *websocket.Conn) {
 				err = tx.Commit()
 				if err != nil {
 					// ! SQL Commit Error
+					websocket.JSON.Send(w,
+						PacketEvent{
+							PacketId:  "notify",
+							Name:      "server",
+							Operation: "",
+						}.Set(
+							PacketEventError{
+								PacketId: event.PacketId,
+								Message:  "Save packet error",
+							}))
+					logger.Debug("SQL \"commit\" error", "ID", connId, "message", err)
 					w.Write([]byte(err.Error()))
 					continue
 				}
 			}
 		default:
 			{
-				// ! Invalid Event Type
+				// ! Invalid Event.Operation Type
+				websocket.JSON.Send(w,
+					PacketEvent{
+						PacketId:  "notify",
+						Name:      "server",
+						Operation: "",
+					}.Set(
+						PacketEventError{
+							PacketId: event.PacketId,
+							Message:  "Unknown packet error",
+						}))
+				logger.Debug("PacketEvent.Operation unknown", "ID", connId, "message", event)
 				continue
 			}
 		}
 
 		// Packet Transfer
 		Rooms[room].RLock()
-		for _, v := range Rooms[room].Conn {
+		for cId, v := range Rooms[room].Conn {
+			if cId == connId {
+				continue
+			}
 			websocket.Message.Send(v, packet)
 		}
 		Rooms[room].RUnlock()
