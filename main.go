@@ -276,7 +276,7 @@ func WebsocketRequest(w *websocket.Conn) {
 					continue
 				}
 				_, err = tx.Exec(`
-				INSERT INTO event 
+				INSERT INTO events 
 					(event_id, board_id, element_id, username, operation, timestamp)
 					VALUES (?, ?, ?, ?, ?, ?)`,
 					eventId, boardId, create.ElementId, event.Name, "create", time.Now().Unix())
@@ -378,7 +378,7 @@ func WebsocketRequest(w *websocket.Conn) {
 					continue
 				}
 				_, err = tx.Exec(`
-				INSERT INTO event 
+				INSERT INTO events 
 					(event_id, board_id, element_id, username, operation, timestamp)
 					VALUES (?, ?, ?, ?, ?, ?)`,
 					eventId, boardId, delete.Target, event.Name, "delete", time.Now().Unix())
