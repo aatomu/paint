@@ -28,73 +28,34 @@ type PacketEvent = {
     }
   | {
       operation: "mouse";
-      data: {
-        pos: [number, number];
-      };
+      data: PacketEventMouse;
     }
   | {
       operation: "create";
-      data: {
-        element_id: string;
-        bold: number;
-        color: string;
-        opacity: number;
-      } & (
-        | {
-            type: "pen";
-            property: {
-              d: string;
-            };
-          }
-        | {
-            type: "line";
-            property: {
-              start: [number, number];
-              end: [number, number];
-            };
-          }
-        | {
-            type: "stamp";
-            property: {
-              pos: [number, number];
-              text: string;
-            };
-          }
-      );
+      data: PacketEventCreate;
     }
   | {
       operation: "delete";
-      data: {
-        target: string;
-      };
+      data: PacketEventDelete;
     }
   | {
       operation: "undo";
-      data: {
-        target: string;
-      };
+      data: PacketEventUndo;
     }
   | {
       operation: "redo";
-      data: {
-        target: string;
-      };
+      data: PacketEventRedo;
     }
   | {
       operation: "clear";
     }
   | {
       operation: "success";
-      data: {
-        packet_id: string;
-      };
+      data: PacketEventSuccess;
     }
   | {
       operation: "error";
-      data: {
-        packet_id: string;
-        message: string;
-      };
+      data: PacketEventError;
     }
 );
 
@@ -125,12 +86,10 @@ type PacketEventCreate = {
 type PacketEventDelete = {
   target: string;
 };
-type PacketEventUndo = {
-  target: string;
-};
-type PacketEventRedo = {
-  target: string;
-};
+type PacketEventUndo = {};
+
+type PacketEventRedo = {};
+
 type PacketEventClear = {};
 
 type PacketEventSuccess = {
