@@ -86,6 +86,7 @@ type PacketEventRedo struct {
 type PacketEventClear struct{}
 
 type PacketEventSuccess struct {
+	EventId  string `json:"event_id"`
 	PacketId string `json:"packet_id"`
 }
 type PacketEventError struct {

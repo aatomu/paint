@@ -7,7 +7,7 @@ type BoardConfigration = {
 };
 
 type PointerConfiguration = {
-  mode: "move" | "pen" | "line" | "stamp";
+  mode: "move" | "pen" | "line" | "stamp" | "delete";
   isDownPrev: boolean;
   isDown: boolean;
   prev: [number, number];
@@ -134,6 +134,7 @@ type PacketEventRedo = {
 type PacketEventClear = {};
 
 type PacketEventSuccess = {
+  event_id: string;
   packet_id: string;
 };
 
