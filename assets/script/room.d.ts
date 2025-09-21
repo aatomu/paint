@@ -25,6 +25,10 @@ type PacketEvent = {
   name: string;
 } & (
   | {
+      operation: "";
+      data: null;
+    }
+  | {
       operation: "mouse";
       data: {
         pos: [number, number];
