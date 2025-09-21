@@ -18,8 +18,8 @@ type PointerConfiguration = {
 
 // MARK: Packet
 // operation:
-//   c=>s :"mouse"|"create"|"delete"|"undo"|"redo"|"clear"
-//   s=>c :"success"|"error"|"transfer"
+//   c<=>s :"mouse"|"create"|"delete"|"undo"|"redo"|"clear"
+//   s=>c :"success"|"error"
 type PacketEvent = {
   packet_id: string;
   name: string;

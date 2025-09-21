@@ -52,8 +52,8 @@ type Room struct {
 type PacketEvent struct {
 	PacketId string `json:"packet_id"`
 	Name     string `json:"name"`
-	// c=>s :"mouse"|"create"|"delete"|"undo"|"redo"|"clear"
-	// s=>c :"success"|"error"|"transfer"
+	// c<=>s :"mouse"|"create"|"delete"|"undo"|"redo"|"clear"
+	// s=>c :"success"|"error"
 	Operation string          `json:"operation"`
 	Data      json.RawMessage `json:"data"`
 }
