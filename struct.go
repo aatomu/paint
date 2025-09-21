@@ -75,13 +75,9 @@ type PacketEventDelete struct {
 	Target string `json:"target"`
 }
 
-type PacketEventUndo struct {
-	Target string `json:"target"`
-}
+type PacketEventUndo struct{}
 
-type PacketEventRedo struct {
-	Target string `json:"target"`
-}
+type PacketEventRedo struct{}
 
 type PacketEventClear struct{}
 
@@ -112,7 +108,7 @@ func CreateTables(db *sql.DB) error {
 	CREATE TABLE IF NOT EXISTS boards (
 		board_id               TEXT    PRIMARY KEY,
 		name             TEXT    NOT NULL,
-		create_timestamp INTEGER NOT NULL
+		create_at INTEGER NOT NULL
 	)`)
 	if err != nil {
 		return fmt.Errorf("%s(in boards)", err.Error())
@@ -137,12 +133,14 @@ func CreateTables(db *sql.DB) error {
 
 	_, err = db.Exec(`
 	CREATE TABLE IF NOT EXISTS events (
-		event_id   TEXT    PRIMARY KEY,
+		id      INTEGER PRIMARY KEY AUTOINCREMENT,
+		event_id   TEXT    NOT NULL UNIQUE,
 		board_id   TEXT    NOT NULL,
 		element_id TEXT,
 		username   TEXT    NOT NULL,
 		operation  TEXT    NOT NULL,
-		timestamp  INTEGER NOT NULL,
+		undo       INTEGER NOT NULL,
+		create_at  INTEGER NOT NULL,
 		FOREIGN KEY(board_id) REFERENCES boards(board_id),
 		FOREIGN KEY(element_id) REFERENCES elements(element_id)
 	)`)
@@ -158,7 +156,7 @@ func GetBoardId(name string) (boardId string, err error) {
 	if err == sql.ErrNoRows {
 		boardId = uuid.New().String()
 		now := time.Now().Unix()
-		_, err = DB.Exec("INSERT INTO boards (board_id, name, create_timestamp) VALUES (?, ?, ?)", boardId, name, now)
+		_, err = DB.Exec("INSERT INTO boards (board_id, name, create_at) VALUES (?, ?, ?)", boardId, name, now)
 		return
 	}
 	return
