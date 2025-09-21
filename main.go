@@ -135,6 +135,7 @@ func WebsocketRequest(w *websocket.Conn) {
 
 	var packet string
 	var source = w.Request().RemoteAddr
+	// MARK: > Read loop
 	for {
 		err := websocket.Message.Receive(w, &packet)
 		if err != nil {
@@ -146,7 +147,9 @@ func WebsocketRequest(w *websocket.Conn) {
 		}
 		logger.Debug("new message", "IP", source, "ID", connId, "packet", packet)
 
-		// MARK: Validation
+		eventId := uuid.New().String()
+
+		// MARK: >> Validation
 		var event PacketEvent
 		err = json.Unmarshal([]byte(packet), &event)
 		if err != nil {
@@ -166,7 +169,7 @@ func WebsocketRequest(w *websocket.Conn) {
 
 		dataDecoder := NewDecoder(bytes.NewReader(event.Data))
 		switch event.Operation {
-		case "mouse": // MARK: >Mouse
+		case "mouse": // MARK: >>> Mouse
 			{
 				err = dataDecoder.Decode(&PacketEventMouse{})
 				if err != nil {
@@ -195,7 +198,7 @@ func WebsocketRequest(w *websocket.Conn) {
 						}))
 			}
 
-		case "create": // MARK: >Create
+		case "create": // MARK: >>> Create
 			{
 				var create PacketEventCreate
 				err = dataDecoder.Decode(&create)
@@ -215,7 +218,7 @@ func WebsocketRequest(w *websocket.Conn) {
 					continue
 				}
 
-				// Property check
+				// MARK: >>>> Property check
 				propertyDecoder := NewDecoder(bytes.NewReader(create.Property))
 				var propertyError error
 				switch create.Type {
@@ -264,8 +267,8 @@ func WebsocketRequest(w *websocket.Conn) {
 					continue
 				}
 
+				// MARK: >>>> Write DB
 				// Write SQL
-				eventId := uuid.New().String()
 				tx, err := DB.Begin()
 				if err != nil {
 					// ! SQL transaction Error
@@ -347,7 +350,7 @@ func WebsocketRequest(w *websocket.Conn) {
 					continue
 				}
 			}
-		case "delete": // MARK: >Delete
+		case "delete": // MARK: >>> Delete
 			{
 				var delete PacketEventDelete
 				err = dataDecoder.Decode(&delete)
@@ -366,8 +369,9 @@ func WebsocketRequest(w *websocket.Conn) {
 					logger.Debug("PacketEventDelete marshal error", "ID", connId, "message", event)
 					continue
 				}
+
+				// MARK: >>>> Write DB
 				// Write SQL
-				eventId := uuid.New().String()
 				tx, err := DB.Begin()
 				if err != nil {
 					// ! SQL transaction Error
@@ -469,7 +473,7 @@ func WebsocketRequest(w *websocket.Conn) {
 					continue
 				}
 			}
-		default:
+		default: // MARK: >>> default
 			{
 				// ! Invalid Event.Operation Type
 				websocket.JSON.Send(w,
@@ -495,9 +499,11 @@ func WebsocketRequest(w *websocket.Conn) {
 				Operation: "success",
 			}.Set(
 				PacketEventSuccess{
+					EventId:  eventId,
 					PacketId: event.PacketId,
 				}))
 
+		// MARK: >> Packet transfer
 		// Packet Transfer
 		Rooms[room].RLock()
 		for cId, v := range Rooms[room].Conn {
