@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/json"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -135,7 +136,14 @@ func WebsocketRequest(w *websocket.Conn) {
 	var packet string
 	var source = w.Request().RemoteAddr
 	for {
-		websocket.Message.Receive(w, &packet)
+		err := websocket.Message.Receive(w, &packet)
+		if err != nil {
+			if err == io.EOF {
+				return
+			}
+			logger.Error("new message", "IP", source, "ID", connId, "packet", packet, "message", err)
+			return
+		}
 		logger.Info("new message", "IP", source, "ID", connId, "packet", packet)
 
 		// MARK: Validation
