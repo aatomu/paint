@@ -91,7 +91,7 @@ window.addEventListener("mousemove", pointerEvent)
 function pointerEvent(event) {
   const isDown = event.buttons !== 0
 
-  let callback = "null"
+  let callback = null
   // change to down
   if (isDown && !pointer.isDownPrev) {
     pointerDown(event)
@@ -108,25 +108,25 @@ function pointerEvent(event) {
     callback = "up"
   }
 
-  if (!(isDown && pointer.mode == "move")) {
-    pointer.notify++
-    if (pointer.notify > 50) {
-      pointer.notify = 0
-      sendPacket({
-        packet_id: `mouse-${(new Date()).getTime()}`,
-        name: username,
-        operation: "mouse",
-        data: {
-          pos: [
-            fixedNumber(event.clientX - boardConfig.offset[0]),
-            fixedNumber(event.clientY - boardConfig.offset[1])
-          ]
-        }
-      })
-    }
-  }
+  // if (!(isDown && pointer.mode == "move")) {
+  //   pointer.notify++
+  //   if (pointer.notify > 50) {
+  //     pointer.notify = 0
+  //     sendPacket({
+  //       packet_id: `mouse-${(new Date()).getTime()}`,
+  //       name: username,
+  //       operation: "mouse",
+  //       data: {
+  //         pos: [
+  //           fixedNumber(event.clientX - boardConfig.offset[0]),
+  //           fixedNumber(event.clientY - boardConfig.offset[1])
+  //         ]
+  //       }
+  //     })
+  //   }
+  // }
 
-  console.log(JSON.stringify({ "event": "pointer", "callback": callback, "mode": pointer.mode }))
+  if (callback)  console.log(JSON.stringify({ "event": "pointer", "callback": callback, "mode": pointer.mode }))
   pointer.isDownPrev = isDown
 }
 
