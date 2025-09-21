@@ -44,10 +44,22 @@ const pointer = {
 }
 
 /** @type {WebSocket|null} */
-var ws = null
+let ws = null
+
+const username = getCookie("name") ?? ""
+
+/** @type {PacketEvent} */
+let packet = {
+  packet_id: "",
+  name: "",
+  operation: "",
+  data: null,
+}
+
+/** @type {string[]} */
+let events = []
 
 window.addEventListener("wheel", (event) => {
-
   const prevScale = boardConfig.scale
   if (event.deltaY < 0) {
     boardConfig.scale += 0.05
@@ -99,12 +111,12 @@ function pointerEvent(event) {
       pointer.notify = 0
       sendPacket({
         packet_id: `mouse-${(new Date()).getTime()}`,
-        name: getCookie("name") ?? "",
+        name: username,
         operation: "mouse",
         data: {
           pos: [
-            (event.clientX - boardConfig.offset[0]),
-            (event.clientY - boardConfig.offset[1])
+            fixedNumber(event.clientX - boardConfig.offset[0]),
+            fixedNumber(event.clientY - boardConfig.offset[1])
           ]
         }
       })
@@ -139,57 +151,79 @@ function pointerDown(event) {
       break
     }
   }
-  if (isBypass) pointer.isDown = false
-  console.log("cancel by .side-menu")
+  if (isBypass) {
+    pointer.isDown = false
+    console.log("cancel by .side-menu")
+    return
+  }
 
+  /** @type {[number,number]} */
+  const pos = [(pointer.prev[0] / boardConfig.scale), (pointer.prev[1] / boardConfig.scale)]
   switch (pointer.mode) {
     case "move": {
       break
     }
     case "pen": {
-      pointer.current = new Date().getTime().toString();
-      const pen = document.createElementNS("http://www.w3.org/2000/svg", "path");
-      pen.id = pointer.current
-      pointer.data = `M${pointer.prev[0] / boardConfig.scale},${pointer.prev[1] / boardConfig.scale}`
-      pen.setAttribute("d", pointer.data)
-      pen.setAttribute("style", `stroke-width: ${boardConfig.bold}px; stroke: ${boardConfig.color}; opacity: ${boardConfig.opacity};`)
-      pen.setAttribute("stroke-linecap", "round")
-      pen.setAttribute("stroke-linejoin", "round")
-      board.appendChild(pen)
+      packet = {
+        packet_id: UUIDv7(),
+        name: username,
+        operation: "create",
+        data: {
+          element_id: new Date().getTime().toString(),
+          bold: boardConfig.bold,
+          color: boardConfig.color,
+          opacity: boardConfig.opacity,
+          type: "pen",
+          property: {
+            d: `M${fixedString(pos[0])},${fixedString(pos[1])}`
+          }
+        }
+      }
+      createElement(packet.data)
       break
     }
     case "line": {
-      pointer.current = new Date().getTime().toString();
-      const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-      line.id = pointer.current
-      line.setAttribute("x1", (pointer.prev[0] / boardConfig.scale).toFixed(0))
-      line.setAttribute("y1", (pointer.prev[1] / boardConfig.scale).toFixed(0))
-      line.setAttribute("x2", (pointer.prev[0] / boardConfig.scale).toFixed(0))
-      line.setAttribute("y2", (pointer.prev[1] / boardConfig.scale).toFixed(0))
-      line.setAttribute("style", `stroke-width: ${boardConfig.bold}px; stroke: ${boardConfig.color}; opacity: ${boardConfig.opacity};`)
-      line.setAttribute("stroke-linecap", "round")
-      board.appendChild(line)
+      packet = {
+        packet_id: UUIDv7(),
+        name: username,
+        operation: "create",
+        data: {
+          element_id: new Date().getTime().toString(),
+          bold: boardConfig.bold,
+          color: boardConfig.color,
+          opacity: boardConfig.opacity,
+          type: "line",
+          property: {
+            start: [fixedNumber(pos[0]), fixedNumber(pos[1])],
+            end: [fixedNumber(pos[0]), fixedNumber(pos[1])],
+          }
+        }
+      }
+      createElement(packet.data)
       break
     }
     case "stamp": {
       if (stampInput.value.length === 0) break
-      pointer.current = new Date().getTime().toString();
-      const stamp = document.createElementNS("http://www.w3.org/2000/svg", "text");
-      stamp.id = pointer.current
-      stamp.setAttribute("x", (pointer.prev[0] / boardConfig.scale).toFixed(0))
-      stamp.setAttribute("y", (pointer.prev[1] / boardConfig.scale).toFixed(0))
-      stamp.setAttribute("text-anchor", "middle")
-      const fontSize = boardConfig.bold * 2
-      stamp.setAttribute("style", `font-size: ${fontSize}px; fill: ${boardConfig.color}; opacity: ${boardConfig.opacity};`)
       const stampLines = stampInput.value.split("\n")
-      for (let i = 0; i < stampLines.length; i++) {
-        const line = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
-        line.textContent = stampLines[i]
-        line.setAttribute("dy", fontSize.toFixed(2))
-        line.setAttribute("text-anchor", "middle")
-        stamp.append(line)
+
+      packet = {
+        packet_id: UUIDv7(),
+        name: username,
+        operation: "create",
+        data: {
+          element_id: new Date().getTime().toString(),
+          bold: boardConfig.bold,
+          color: boardConfig.color,
+          opacity: boardConfig.opacity,
+          type: "stamp",
+          property: {
+            pos: [fixedNumber(pos[0]), fixedNumber(pos[1])],
+            text: JSON.stringify(stampLines)
+          }
+        }
       }
-      board.appendChild(stamp)
+      createElement(packet.data)
+      break
     }
   }
 }
@@ -213,27 +247,40 @@ function pointerMove(event) {
       break
     }
     case "pen": {
-      const pen = document.getElementById(pointer.current)
+      if (packet.operation != "create") return
+      if (packet.data.type != "pen") return
+      const pen = document.getElementById(packet.data.element_id)
       if (!pen) return
-      pointer.data += `L${position[0] / boardConfig.scale},${position[1] / boardConfig.scale}`
-      pen.setAttribute("d", pointer.data)
-      break
-    }
-    case "stamp": {
-      const stamp = document.getElementById(pointer.current)
-      if (!stamp) return
-      stamp.setAttribute("x", (position[0] / boardConfig.scale).toFixed(0))
-      stamp.setAttribute("y", (position[1] / boardConfig.scale).toFixed(0))
-      for (let i = 0; i < stamp.children.length; i++) {
-        stamp.children[i].setAttribute("x", (position[0] / boardConfig.scale).toFixed(0))
-      }
+
+      packet.data.property.d += `L${fixedString(position[0] / boardConfig.scale)},${fixedString(position[1] / boardConfig.scale)}`
+      pen.setAttribute("d", packet.data.property.d)
       break
     }
     case "line": {
-      const line = document.getElementById(pointer.current)
+      if (packet.operation != "create") return
+      if (packet.data.type != "line") return
+      const line = document.getElementById(packet.data.element_id)
       if (!line) return
-      line.setAttribute("x2", (position[0] / boardConfig.scale).toFixed(0))
-      line.setAttribute("y2", (position[1] / boardConfig.scale).toFixed(0))
+
+      const pos = [position[0] / boardConfig.scale, position[1] / boardConfig.scale]
+      packet.data.property.end = [fixedNumber(pos[0]), fixedNumber(pos[1])]
+      line.setAttribute("x2", fixedString(pos[0]))
+      line.setAttribute("y2", fixedString(pos[1]))
+      break
+    }
+    case "stamp": {
+      if (packet.operation != "create") return
+      if (packet.data.type != "stamp") return
+      const stamp = document.getElementById(packet.data.element_id)
+      if (!stamp) return
+
+      const pos = [position[0] / boardConfig.scale, position[1] / boardConfig.scale]
+      packet.data.property.pos = [fixedNumber(pos[0]), fixedNumber(pos[1])]
+      stamp.setAttribute("x", fixedString(pos[0]))
+      stamp.setAttribute("y", fixedString(pos[1]))
+      for (let i = 0; i < stamp.children.length; i++) {
+        stamp.children[i].setAttribute("x", fixedString(pos[0]))
+      }
       break
     }
   }
@@ -245,6 +292,10 @@ function pointerMove(event) {
  */
 function pointerUp(event) {
   pointer.isDown = false
+
+  if (packet.operation == "create") {
+    sendPacket(packet)
+  }
 }
 
 // MARK: updateBoard()
@@ -335,6 +386,45 @@ window.addEventListener("DOMContentLoaded", () => {
   ws.addEventListener("message", (event) => {
     console.log(JSON.stringify({ "event": "websocket", "callback": "message" }), event)
 
+
+    //   c<=>s :"mouse"|"create"|"delete"|"undo"|"redo"|"clear"
+    //   s=>c :"success"|"error"
+    /** @type {PacketEvent} */
+    const packet = JSON.parse(event.data)
+    switch (packet.operation) {
+      case "mouse": {
+        break
+      }
+      case "create": {
+        createElement(packet.data)
+        break
+      }
+      case "delete": {
+        const target = document.getElementById(packet.data.target)
+        if (target) target.remove()
+        break
+      }
+      case "undo": {
+
+        break
+      }
+      case "redo": {
+
+        break
+      }
+      case "clear": {
+
+        break
+      }
+      case "success": {
+
+        break
+      }
+      case "error": {
+
+        break
+      }
+    }
   })
   /** @param {Event|ErrorEvent} event*/
   ws.addEventListener("error", (event) => {
@@ -362,4 +452,82 @@ function sendMessage(text) {
  */
 function sendPacket(packet) {
   sendMessage(JSON.stringify(packet))
+}
+
+/**
+ * @param {PacketEventCreate} element
+ */
+function createElement(element) {
+  switch (element.type) {
+    case "pen": {
+      const pen = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      pen.id = element.element_id
+      pen.setAttribute("d", element.property.d)
+      pen.setAttribute("style", `stroke-width: ${element.bold}px; stroke: ${element.color}; opacity: ${element.opacity};`)
+      pen.setAttribute("stroke-linecap", "round")
+      pen.setAttribute("stroke-linejoin", "round")
+      board.appendChild(pen)
+      break
+    }
+    case "line": {
+      const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      line.id = element.element_id
+      line.setAttribute("x1", fixedString(element.property.start[0]))
+      line.setAttribute("y1", fixedString(element.property.start[1]))
+      line.setAttribute("x2", fixedString(element.property.end[0]))
+      line.setAttribute("y2", fixedString(element.property.end[1]))
+      line.setAttribute("style", `stroke-width: ${element.bold}px; stroke: ${element.color}; opacity: ${element.opacity};`)
+      line.setAttribute("stroke-linecap", "round")
+      board.appendChild(line)
+      break
+    }
+    case "stamp": {
+      const stamp = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      stamp.id = element.element_id
+      stamp.setAttribute("x", fixedString(element.property.pos[0]))
+      stamp.setAttribute("y", fixedString(element.property.pos[1]))
+      stamp.setAttribute("text-anchor", "middle")
+      const fontSize = element.bold * 2
+      stamp.setAttribute("style", `font-size: ${fontSize}px; fill: ${element.color}; opacity: ${element.opacity};`)
+      const stampLines = JSON.parse(element.property.text)
+      for (let i = 0; i < stampLines.length; i++) {
+        const line = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
+        line.textContent = stampLines[i]
+        line.setAttribute("x", fixedString(element.property.pos[0]))
+        line.setAttribute("dy", fontSize.toFixed(2))
+        line.setAttribute("text-anchor", "middle")
+        stamp.append(line)
+      }
+      board.appendChild(stamp)
+    }
+  }
+}
+
+function UUIDv7() {
+  let uuid = 'tttttttt-tttt-7xxx-yxxx-xxxxxxxxxxxx'
+  uuid = uuid.replace(/[xy]/g, function (c) {
+    const r = Math.trunc(Math.random() * 16);
+    const v = c == 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  })
+  uuid = uuid.replace(/^[t]{8}-[t]{4}/, function () {
+    const unixtimestamp = Date.now().toString(16).padStart(12, '0');
+    return unixtimestamp.slice(0, 8) + '-' + unixtimestamp.slice(8);
+  });
+  return uuid
+}
+
+/**
+ * @param {number} n 
+ * @returns {number}
+*/
+function fixedNumber(n) {
+  return parseFloat(fixedString(n))
+}
+/**
+ * @param {number} n 
+ * @returns {string}
+*/
+function fixedString(n) {
+  return n.toFixed(2)
 }
