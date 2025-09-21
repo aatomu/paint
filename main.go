@@ -377,9 +377,9 @@ func WebsocketRequest(w *websocket.Conn) {
 				}
 				_, err = tx.Exec(`
 				INSERT INTO events 
-					(event_id, board_id, element_id, username, operation, timestamp)
-					VALUES (?, ?, ?, ?, ?, ?)`,
-					eventId, boardId, delete.Target, event.Name, "delete", time.Now().Unix())
+					(event_id, board_id, element_id, username, operation, undo, create_at)
+					VALUES (?, ?, ?, ?, ?, ?, ?)`,
+					eventId, boardId, delete.Target, event.Name, "delete", 0, time.Now().UnixMilli())
 				if err != nil {
 					tx.Rollback()
 					// ! SQL Insert Event Error
