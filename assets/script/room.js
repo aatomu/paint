@@ -58,8 +58,15 @@ let packet = {
   data: null,
 }
 
-/** @type {string[]} */
-let events = []
+/** @type {{[packet_id: string]:PacketEvent}} */
+let packetStack = {
+  "example": {
+    packet_id: "",
+    name: "",
+    operation: "",
+    data: null,
+  }
+}
 
 // MARK: Zoom in/out
 window.addEventListener("wheel", (event) => {
@@ -302,7 +309,7 @@ function pointerMove(event) {
     case "delete": { //MARK: >> delete
       /** @type {SVGElement[]|HTMLElement[]} */
       // @ts-expect-error
-      const targetElements = board.elementsFromPoint(event.clientX, event.clientY)
+      const targetElements = document.elementsFromPoint(event.clientX, event.clientY)
       if (targetElements.length < 1) break
       const target = targetElements[0]
       if (!["path", "line", "text"].includes(target.localName)) break
@@ -315,8 +322,8 @@ function pointerMove(event) {
           target: target.id
         }
       }
-      target.remove()
       sendPacket(packet)
+      packetStack[packet.packet_id] = packet
       break
     }
   }
@@ -332,6 +339,7 @@ function pointerUp(event) {
 
   if (packet.operation == "create") {
     sendPacket(packet)
+    packetStack[packet.packet_id] = packet
   }
 }
 
@@ -458,11 +466,44 @@ window.addEventListener("DOMContentLoaded", () => {
         break
       }
       case "success": { //MARK: >> success
+        const success_packet = packetStack[packet.data.packet_id]
+        if (!success_packet) break
 
+        if (success_packet.operation == "delete") {
+          const target = document.getElementById(success_packet.data.target)
+          if (target) target.remove()
+          break
+        }
+
+        delete packetStack[packet.data.packet_id]
         break
       }
       case "error": { //MARK: >> error
+        const error_packet = packetStack[packet.data.packet_id]
+        if (!error_packet) break
 
+        switch (error_packet.operation) {
+          case "mouse": {
+            break
+          }
+          case "create": {
+            const target = document.getElementById(error_packet.data.element_id)
+            if (target) target.remove()
+            break
+          }
+          case "delete": {
+            break
+          }
+          case "undo": {
+            break
+          }
+          case "redo": {
+            break
+          }
+          case "clear": {
+            break
+          }
+        }
         break
       }
     }
