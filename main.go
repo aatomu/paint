@@ -696,6 +696,247 @@ func WebsocketRequest(w *websocket.Conn) {
 					}
 				}
 			}
+		case "redo": // MARK: >>> Redo
+			{
+				// MARK: >>>> Write DB
+				// Write SQL
+				tx, err := DB.Begin()
+				if err != nil {
+					// ! SQL transaction Error
+					websocket.JSON.Send(w,
+						PacketEvent{
+							PacketId:  "notify",
+							Name:      "server",
+							Operation: "error",
+						}.Set(
+							PacketEventError{
+								PacketId: event.PacketId,
+								Message:  "Read events error",
+							}))
+					logger.Debug("SQL \"transaction start\" error", "ID", connId, "message", err)
+					continue
+				}
+
+				qr := tx.QueryRow(`
+				SELECT event_id, element_id, username, operation
+					FROM events 
+					WHERE undo = 1 AND board_id = ?
+					ORDER BY id ASC 
+					LIMIT 1`,
+					boardId)
+
+				var event_id, element_id, name, operation string
+				qr.Scan(&event_id, &element_id, &name, &operation)
+
+				var result sql.Result
+				result, err = tx.Exec(`
+				UPDATE events 
+					SET undo = 0
+					WHERE event_id = ?`,
+					event_id)
+				if err != nil {
+					tx.Rollback()
+					// ! SQL Update Element Error
+					websocket.JSON.Send(w,
+						PacketEvent{
+							PacketId:  "notify",
+							Name:      "server",
+							Operation: "error",
+						}.Set(
+							PacketEventError{
+								PacketId: event.PacketId,
+								Message:  "Read events error",
+							}))
+					logger.Debug("SQL \"UPDATE elements\" error", "ID", connId, "message", err)
+					continue
+				}
+
+				var n int64
+				n, err = result.RowsAffected()
+				if err != nil || n != 1 {
+					tx.Rollback()
+					// ! SQL Target Missin Error
+					websocket.JSON.Send(w,
+						PacketEvent{
+							PacketId:  "notify",
+							Name:      "server",
+							Operation: "error",
+						}.Set(
+							PacketEventError{
+								PacketId: event.PacketId,
+								Message:  "Read events error",
+							}))
+					logger.Debug("SQL \"rows affected != 1\" error", "ID", connId, "message", err)
+					continue
+				}
+
+				switch operation {
+				case "create":
+					{
+						result, err = tx.Exec(`
+						UPDATE elements 
+							SET deleted = 0
+							WHERE element_id = ? AND board_id = ?`,
+							element_id, boardId)
+						if err != nil {
+							tx.Rollback()
+							// ! SQL Update Element Error
+							websocket.JSON.Send(w,
+								PacketEvent{
+									PacketId:  "notify",
+									Name:      "server",
+									Operation: "error",
+								}.Set(
+									PacketEventError{
+										PacketId: event.PacketId,
+										Message:  "Save packet error",
+									}))
+							logger.Debug("SQL \"UPDATE elements\" error", "ID", connId, "message", err)
+							continue
+						}
+
+						var n int64
+						n, err = result.RowsAffected()
+						if err != nil || n != 1 {
+							tx.Rollback()
+							// ! SQL Target Missin Error
+							websocket.JSON.Send(w,
+								PacketEvent{
+									PacketId:  "notify",
+									Name:      "server",
+									Operation: "error",
+								}.Set(
+									PacketEventError{
+										PacketId: event.PacketId,
+										Message:  "Save packet error",
+									}))
+							logger.Debug("SQL \"rows affected != 1\" error", "ID", connId, "message", err)
+							continue
+						}
+
+						data := PacketEventCreate{
+							ElementId: element_id,
+						}
+						qr := tx.QueryRow(`
+						SELECT type, bold, color, opacity, property
+							FROM elements 
+							WHERE board_id = ? AND element_id = ?`,
+							boardId, element_id)
+						err := qr.Scan(&data.Type, &data.Bold, &data.Color, &data.Opacity, &data.Property)
+						if err != nil {
+							// ! SQL Commit Error
+							websocket.JSON.Send(w,
+								PacketEvent{
+									PacketId:  "notify",
+									Name:      "server",
+									Operation: "error",
+								}.Set(
+									PacketEventError{
+										PacketId: event.PacketId,
+										Message:  "Read events error",
+									}))
+							logger.Debug("SQL \"elements row read\" error", "ID", connId, "message", err)
+							continue
+						}
+
+						err = tx.Commit()
+						if err != nil {
+							// ! SQL Commit Error
+							websocket.JSON.Send(w,
+								PacketEvent{
+									PacketId:  "notify",
+									Name:      "server",
+									Operation: "error",
+								}.Set(
+									PacketEventError{
+										PacketId: event.PacketId,
+										Message:  "Save packet error",
+									}))
+							logger.Debug("SQL \"commit\" error", "ID", connId, "message", err)
+							continue
+						}
+
+						TransferAll(room, PacketEvent{
+							PacketId:  "redo",
+							Name:      "server",
+							Operation: "create",
+						}.Set(data),
+						)
+					}
+				case "delete":
+					{
+						result, err = tx.Exec(`
+						UPDATE elements 
+							SET deleted = 1
+							WHERE element_id = ? AND board_id = ?`,
+							element_id, boardId)
+						if err != nil {
+							tx.Rollback()
+							// ! SQL Update Element Error
+							websocket.JSON.Send(w,
+								PacketEvent{
+									PacketId:  "notify",
+									Name:      "server",
+									Operation: "error",
+								}.Set(
+									PacketEventError{
+										PacketId: event.PacketId,
+										Message:  "Save packet error",
+									}))
+							logger.Debug("SQL \"UPDATE elements\" error", "ID", connId, "message", err)
+							continue
+						}
+
+						var n int64
+						n, err = result.RowsAffected()
+						if err != nil || n != 1 {
+							tx.Rollback()
+							// ! SQL Target Missin Error
+							websocket.JSON.Send(w,
+								PacketEvent{
+									PacketId:  "notify",
+									Name:      "server",
+									Operation: "error",
+								}.Set(
+									PacketEventError{
+										PacketId: event.PacketId,
+										Message:  "Save packet error",
+									}))
+							logger.Debug("SQL \"rows affected != 1\" error", "ID", connId, "message", err)
+							continue
+						}
+
+						err = tx.Commit()
+						if err != nil {
+							// ! SQL Commit Error
+							websocket.JSON.Send(w,
+								PacketEvent{
+									PacketId:  "notify",
+									Name:      "server",
+									Operation: "error",
+								}.Set(
+									PacketEventError{
+										PacketId: event.PacketId,
+										Message:  "Save packet error",
+									}))
+							logger.Debug("SQL \"commit\" error", "ID", connId, "message", err)
+							continue
+						}
+
+						TransferAll(room,
+							PacketEvent{
+								PacketId:  "redo",
+								Name:      "server",
+								Operation: "delete",
+							}.Set(
+								PacketEventDelete{
+									Target: element_id,
+								},
+							),
+						)
+					}
+				}
+			}
 		default: // MARK: >>> default
 			{
 				// ! Invalid Event.Operation Type
