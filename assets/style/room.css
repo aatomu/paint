@@ -92,7 +92,7 @@ body {
   background-color: var(--button-select);
 }
 
-.side-menu-area input[type=radio] {
+.side-menu-area input[type=radio], .side-menu-area input[type=button] {
   display: none;
 }
 

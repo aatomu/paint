@@ -25,6 +25,12 @@ const boldRange = document.getElementById("bold-range")
 /** @type HTMLInputElement */
 //@ts-expect-error
 const boldInput = document.getElementById("bold-input")
+/** @type HTMLInputElement */
+//@ts-expect-error
+const undoInput = document.getElementById("undo-input")
+/** @type HTMLInputElement */
+//@ts-expect-error
+const redoInput = document.getElementById("redo-input")
 
 // MARK: Vars
 /** @type {BoardConfigration} */
@@ -412,6 +418,26 @@ function updateBold(value) {
   boldRange.value = value
   boldInput.value = value
 }
+
+// MARK: #redo
+undoInput.addEventListener("click", () => {
+  sendPacket({
+    packet_id: UUIDv7(),
+    name: username,
+    operation: "undo",
+    data: {}
+  })
+})
+
+// MARK: #redo
+redoInput.addEventListener("click", () => {
+  sendPacket({
+    packet_id: UUIDv7(),
+    name: username,
+    operation: "redo",
+    data: {}
+  })
+})
 
 // MARK: Websocket
 window.addEventListener("DOMContentLoaded", () => {
