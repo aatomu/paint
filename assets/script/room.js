@@ -1,5 +1,6 @@
 // @ts-check
 
+// MARK: Const
 /** @type SVGElement */
 //@ts-expect-error
 const board = document.getElementById("board")
@@ -25,6 +26,7 @@ const boldRange = document.getElementById("bold-range")
 //@ts-expect-error
 const boldInput = document.getElementById("bold-input")
 
+// MARK: Vars
 /** @type {BoardConfigration} */
 const boardConfig = {
   scale: 1,
@@ -59,6 +61,7 @@ let packet = {
 /** @type {string[]} */
 let events = []
 
+// MARK: Zoom in/out
 window.addEventListener("wheel", (event) => {
   const prevScale = boardConfig.scale
   if (event.deltaY < 0) {
@@ -127,6 +130,7 @@ function pointerEvent(event) {
   pointer.isDownPrev = isDown
 }
 
+//MARK: > pointerDown
 /**
  * @param {MouseEvent} event
  * @return {void}
@@ -160,10 +164,10 @@ function pointerDown(event) {
   /** @type {[number,number]} */
   const pos = [(pointer.prev[0] / boardConfig.scale), (pointer.prev[1] / boardConfig.scale)]
   switch (pointer.mode) {
-    case "move": {
+    case "move": { //MARK: >> move
       break
     }
-    case "pen": {
+    case "pen": { //MARK: >> pen
       packet = {
         packet_id: UUIDv7(),
         name: username,
@@ -182,7 +186,7 @@ function pointerDown(event) {
       createElement(packet.data)
       break
     }
-    case "line": {
+    case "line": { //MARK: >> line
       packet = {
         packet_id: UUIDv7(),
         name: username,
@@ -202,7 +206,7 @@ function pointerDown(event) {
       createElement(packet.data)
       break
     }
-    case "stamp": {
+    case "stamp": { //MARK: >> stamp
       if (stampInput.value.length === 0) break
       const stampLines = stampInput.value.split("\n")
 
@@ -225,9 +229,21 @@ function pointerDown(event) {
       createElement(packet.data)
       break
     }
+    case "delete": { //MARK: >> delete
+      packet = {
+        packet_id: "",
+        name: username,
+        operation: "delete",
+        data: {
+          target: ""
+        }
+      }
+      break
+    }
   }
 }
 
+//MARK: > pointerMove
 /**
  * @param {MouseEvent} event 
  * @return {void}
@@ -240,13 +256,13 @@ function pointerMove(event) {
 
   if (!pointer.isDown) return
   switch (pointer.mode) {
-    case "move": {
+    case "move": {  //MARK: >> move
       boardConfig.offset[0] += position[0] - pointer.prev[0]
       boardConfig.offset[1] += position[1] - pointer.prev[1]
       updateBoard()
       break
     }
-    case "pen": {
+    case "pen": { //MARK: >> pen
       if (packet.operation != "create") return
       if (packet.data.type != "pen") return
       const pen = document.getElementById(packet.data.element_id)
@@ -256,7 +272,7 @@ function pointerMove(event) {
       pen.setAttribute("d", packet.data.property.d)
       break
     }
-    case "line": {
+    case "line": { //MARK: >> line
       if (packet.operation != "create") return
       if (packet.data.type != "line") return
       const line = document.getElementById(packet.data.element_id)
@@ -268,7 +284,7 @@ function pointerMove(event) {
       line.setAttribute("y2", fixedString(pos[1]))
       break
     }
-    case "stamp": {
+    case "stamp": { //MARK: >> stamp
       if (packet.operation != "create") return
       if (packet.data.type != "stamp") return
       const stamp = document.getElementById(packet.data.element_id)
@@ -283,9 +299,30 @@ function pointerMove(event) {
       }
       break
     }
+    case "delete": { //MARK: >> delete
+      /** @type {SVGElement[]|HTMLElement[]} */
+      // @ts-expect-error
+      const targetElements = board.elementsFromPoint(event.clientX, event.clientY)
+      if (targetElements.length < 1) break
+      const target = targetElements[0]
+      if (!["path", "line", "text"].includes(target.localName)) break
+
+      packet = {
+        packet_id: UUIDv7(),
+        name: username,
+        operation: "delete",
+        data: {
+          target: target.id
+        }
+      }
+      target.remove()
+      sendPacket(packet)
+      break
+    }
   }
 }
 
+//MARK: > pointerUp
 /**
  * @param {MouseEvent} event 
  * @return {void}
@@ -368,6 +405,7 @@ function updateBold(value) {
   boldInput.value = value
 }
 
+// MARK: Websocket
 window.addEventListener("DOMContentLoaded", () => {
   updateBoard()
   updateColor("#000000")
@@ -378,10 +416,13 @@ window.addEventListener("DOMContentLoaded", () => {
   url.pathname = "/ws"
   ws = new WebSocket(url.href)
 
+  //MARK: > open
   /** @param {Event} event*/
   ws.addEventListener("open", (event) => {
     console.log(JSON.stringify({ "event": "websocket", "callback": "open" }), event)
   })
+
+  //MARK: > message
   /** @param {MessageEvent} event*/
   ws.addEventListener("message", (event) => {
     console.log(JSON.stringify({ "event": "websocket", "callback": "message" }), event)
@@ -392,45 +433,48 @@ window.addEventListener("DOMContentLoaded", () => {
     /** @type {PacketEvent} */
     const packet = JSON.parse(event.data)
     switch (packet.operation) {
-      case "mouse": {
+      case "mouse": { //MARK: >> mouse
         break
       }
-      case "create": {
+      case "create": { //MARK: >> create
         createElement(packet.data)
         break
       }
-      case "delete": {
+      case "delete": { //MARK: >> delete
         const target = document.getElementById(packet.data.target)
         if (target) target.remove()
         break
       }
-      case "undo": {
+      case "undo": { //MARK: >> undo
 
         break
       }
-      case "redo": {
+      case "redo": { //MARK: >> redo
 
         break
       }
-      case "clear": {
+      case "clear": { //MARK: >> clear
 
         break
       }
-      case "success": {
+      case "success": { //MARK: >> success
 
         break
       }
-      case "error": {
+      case "error": { //MARK: >> error
 
         break
       }
     }
   })
+
+  //MARK: > error
   /** @param {Event|ErrorEvent} event*/
   ws.addEventListener("error", (event) => {
     console.log(JSON.stringify({ "event": "websocket", "callback": "error" }), event)
-
   })
+
+  //MARK: > close
   /** @param {CloseEvent} event*/
   ws.addEventListener("close", (event) => {
     console.log(JSON.stringify({ "event": "websocket", "callback": "close" }), event)
@@ -438,28 +482,13 @@ window.addEventListener("DOMContentLoaded", () => {
   })
 })
 
-
-/**
- * @param {string} text
- */
-function sendMessage(text) {
-  if (!ws) return
-  ws.send(text)
-}
-
-/**
- * @param {PacketEvent} packet
- */
-function sendPacket(packet) {
-  sendMessage(JSON.stringify(packet))
-}
-
+// MARK: createElement()
 /**
  * @param {PacketEventCreate} element
  */
 function createElement(element) {
   switch (element.type) {
-    case "pen": {
+    case "pen": { // MARK: > pen
       const pen = document.createElementNS("http://www.w3.org/2000/svg", "path");
       pen.id = element.element_id
       pen.setAttribute("d", element.property.d)
@@ -469,7 +498,7 @@ function createElement(element) {
       board.appendChild(pen)
       break
     }
-    case "line": {
+    case "line": { // MARK: > line
       const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
       line.id = element.element_id
       line.setAttribute("x1", fixedString(element.property.start[0]))
@@ -481,7 +510,7 @@ function createElement(element) {
       board.appendChild(line)
       break
     }
-    case "stamp": {
+    case "stamp": { // MARK: > stamp
       const stamp = document.createElementNS("http://www.w3.org/2000/svg", "text");
       stamp.id = element.element_id
       stamp.setAttribute("x", fixedString(element.property.pos[0]))
@@ -517,6 +546,7 @@ function UUIDv7() {
   return uuid
 }
 
+// MARK: generic method()
 /**
  * @param {number} n 
  * @returns {number}
@@ -530,4 +560,19 @@ function fixedNumber(n) {
 */
 function fixedString(n) {
   return n.toFixed(2)
+}
+
+/**
+ * @param {string} text
+ */
+function sendMessage(text) {
+  if (!ws) return
+  ws.send(text)
+}
+
+/**
+ * @param {PacketEvent} packet
+ */
+function sendPacket(packet) {
+  sendMessage(JSON.stringify(packet))
 }
