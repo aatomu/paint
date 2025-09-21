@@ -40,8 +40,6 @@ const pointer = {
   isDownPrev: false,
   isDown: false,
   prev: [0, 0],
-  current: "",
-  data: "",
   notify: 0
 }
 

@@ -11,8 +11,6 @@ type PointerConfiguration = {
   isDownPrev: boolean;
   isDown: boolean;
   prev: [number, number];
-  current: string;
-  data: string;
   notify: number;
 };
 
@@ -58,7 +56,7 @@ type PacketEvent = {
         | {
             type: "stamp";
             property: {
-            pos: [number, number];
+              pos: [number, number];
               text: string;
             };
           }
