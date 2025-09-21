@@ -53,8 +53,10 @@ type PacketEvent = {
           }
         | {
             type: "stamp";
+            property: {
             pos: [number, number];
-            text: string;
+              text: string;
+            };
           }
       );
     }
