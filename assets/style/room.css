@@ -1,6 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap');
 
 body {
+  z-index: -2;
   position: relative;
   user-select: none;
 }
@@ -26,12 +27,15 @@ body {
     "pen     pen     pen     pen     pen     pen    " min-content
     "line    line    line    line    line    line   " min-content
     "stamp   stamp   stamp   stamp   stamp   stamp  " min-content
+    "delete  delete  delete  delete  delete  delete " min-content
     "pallet  pallet  pallet  pallet  pallet  pallet " min-content
     "opacity opacity opacity opacity opacity opacity" min-content
     "bold    bold    bold    bold    bold    bold   " min-content
     "undo    undo    undo    redo    redo    redo   " min-content
     "in      in      move    move    out     out    " min-content
-    "l l l l l l" 6lh / 1fr 1fr 1fr 1fr 1fr 1fr;
+    "link    link    link    link    link    link   " min-content
+    "nil     nil     nil     nil     nil     clear  " min-content
+    / 1fr 1fr 1fr 1fr 1fr 1fr;
   gap: 0.5ch;
 }
 
