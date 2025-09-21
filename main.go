@@ -144,7 +144,7 @@ func WebsocketRequest(w *websocket.Conn) {
 			logger.Error("new message", "IP", source, "ID", connId, "packet", packet, "message", err)
 			return
 		}
-		logger.Info("new message", "IP", source, "ID", connId, "packet", packet)
+		logger.Debug("new message", "IP", source, "ID", connId, "packet", packet)
 
 		// MARK: Validation
 		var event PacketEvent
