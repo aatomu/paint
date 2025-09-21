@@ -230,7 +230,7 @@ func WebsocketRequest(w *websocket.Conn) {
 							PacketEvent{
 								PacketId:  "notify",
 								Name:      "server",
-								Operation: "",
+								Operation: "error",
 							}.Set(
 								PacketEventError{
 									PacketId: event.PacketId,
@@ -246,7 +246,7 @@ func WebsocketRequest(w *websocket.Conn) {
 						PacketEvent{
 							PacketId:  "notify",
 							Name:      "server",
-							Operation: "",
+							Operation: "error",
 						}.Set(
 							PacketEventError{
 								PacketId: event.PacketId,
@@ -265,7 +265,7 @@ func WebsocketRequest(w *websocket.Conn) {
 						PacketEvent{
 							PacketId:  "notify",
 							Name:      "server",
-							Operation: "",
+							Operation: "error",
 						}.Set(
 							PacketEventError{
 								PacketId: event.PacketId,
@@ -287,7 +287,7 @@ func WebsocketRequest(w *websocket.Conn) {
 						PacketEvent{
 							PacketId:  "notify",
 							Name:      "server",
-							Operation: "",
+							Operation: "error",
 						}.Set(
 							PacketEventError{
 								PacketId: event.PacketId,
@@ -310,7 +310,7 @@ func WebsocketRequest(w *websocket.Conn) {
 						PacketEvent{
 							PacketId:  "notify",
 							Name:      "server",
-							Operation: "",
+							Operation: "error",
 						}.Set(
 							PacketEventError{
 								PacketId: event.PacketId,
@@ -328,7 +328,7 @@ func WebsocketRequest(w *websocket.Conn) {
 						PacketEvent{
 							PacketId:  "notify",
 							Name:      "server",
-							Operation: "",
+							Operation: "error",
 						}.Set(
 							PacketEventError{
 								PacketId: event.PacketId,
@@ -349,7 +349,7 @@ func WebsocketRequest(w *websocket.Conn) {
 						PacketEvent{
 							PacketId:  "notify",
 							Name:      "server",
-							Operation: "",
+							Operation: "error",
 						}.Set(
 							PacketEventError{
 								PacketId: event.PacketId,
@@ -367,7 +367,7 @@ func WebsocketRequest(w *websocket.Conn) {
 						PacketEvent{
 							PacketId:  "notify",
 							Name:      "server",
-							Operation: "",
+							Operation: "error",
 						}.Set(
 							PacketEventError{
 								PacketId: event.PacketId,
@@ -389,7 +389,7 @@ func WebsocketRequest(w *websocket.Conn) {
 						PacketEvent{
 							PacketId:  "notify",
 							Name:      "server",
-							Operation: "",
+							Operation: "error",
 						}.Set(
 							PacketEventError{
 								PacketId: event.PacketId,
@@ -412,7 +412,7 @@ func WebsocketRequest(w *websocket.Conn) {
 						PacketEvent{
 							PacketId:  "notify",
 							Name:      "server",
-							Operation: "",
+							Operation: "error",
 						}.Set(
 							PacketEventError{
 								PacketId: event.PacketId,
@@ -432,7 +432,7 @@ func WebsocketRequest(w *websocket.Conn) {
 						PacketEvent{
 							PacketId:  "notify",
 							Name:      "server",
-							Operation: "",
+							Operation: "error",
 						}.Set(
 							PacketEventError{
 								PacketId: event.PacketId,
@@ -450,7 +450,7 @@ func WebsocketRequest(w *websocket.Conn) {
 						PacketEvent{
 							PacketId:  "notify",
 							Name:      "server",
-							Operation: "",
+							Operation: "error",
 						}.Set(
 							PacketEventError{
 								PacketId: event.PacketId,
@@ -468,7 +468,7 @@ func WebsocketRequest(w *websocket.Conn) {
 					PacketEvent{
 						PacketId:  "notify",
 						Name:      "server",
-						Operation: "",
+						Operation: "error",
 					}.Set(
 						PacketEventError{
 							PacketId: event.PacketId,
@@ -478,6 +478,17 @@ func WebsocketRequest(w *websocket.Conn) {
 				continue
 			}
 		}
+
+		// Send success
+		websocket.JSON.Send(w,
+			PacketEvent{
+				PacketId:  "notify",
+				Name:      "server",
+				Operation: "success",
+			}.Set(
+				PacketEventSuccess{
+					PacketId: event.PacketId,
+				}))
 
 		// Packet Transfer
 		Rooms[room].RLock()
