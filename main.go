@@ -187,15 +187,6 @@ func WebsocketRequest(w *websocket.Conn) {
 					logger.Debug("PacketEventMouse marshal error", "ID", connId, "message", event)
 					continue
 				}
-				websocket.JSON.Send(w,
-					PacketEvent{
-						PacketId:  "notifty",
-						Name:      "server",
-						Operation: "success",
-					}.Set(
-						PacketEventSuccess{
-							PacketId: event.PacketId,
-						}))
 			}
 
 		case "create": // MARK: >>> Create
@@ -283,14 +274,13 @@ func WebsocketRequest(w *websocket.Conn) {
 								Message:  "Save packet error",
 							}))
 					logger.Debug("SQL \"transaction start\" error", "ID", connId, "message", err)
-					w.Write([]byte(err.Error()))
 					continue
 				}
 				_, err = tx.Exec(`
 				INSERT INTO events 
-					(event_id, board_id, element_id, username, operation, timestamp)
-					VALUES (?, ?, ?, ?, ?, ?)`,
-					eventId, boardId, create.ElementId, event.Name, "create", time.Now().Unix())
+					(event_id, board_id, element_id, username, operation, undo, create_at)
+					VALUES (?, ?, ?, ?, ?, ?, ?)`,
+					eventId, boardId, create.ElementId, event.Name, "create", 0, time.Now().UnixMilli())
 				if err != nil {
 					tx.Rollback()
 					// ! SQL Insert Event Error
@@ -305,7 +295,6 @@ func WebsocketRequest(w *websocket.Conn) {
 								Message:  "Save packet error",
 							}))
 					logger.Debug("SQL \"INSERT events\" error", "ID", connId, "message", err)
-					w.Write([]byte(err.Error()))
 					continue
 				}
 
@@ -328,7 +317,6 @@ func WebsocketRequest(w *websocket.Conn) {
 								Message:  "Save packet error",
 							}))
 					logger.Debug("SQL \"INSERT elements\" error", "ID", connId, "message", err)
-					w.Write([]byte(err.Error()))
 					continue
 				}
 
@@ -346,7 +334,6 @@ func WebsocketRequest(w *websocket.Conn) {
 								Message:  "Save packet error",
 							}))
 					logger.Debug("SQL \"commit\" error", "ID", connId, "message", err)
-					w.Write([]byte(err.Error()))
 					continue
 				}
 			}
@@ -386,7 +373,6 @@ func WebsocketRequest(w *websocket.Conn) {
 								Message:  "Save packet error",
 							}))
 					logger.Debug("SQL \"transaction start\" error", "ID", connId, "message", err)
-					w.Write([]byte(err.Error()))
 					continue
 				}
 				_, err = tx.Exec(`
@@ -408,7 +394,6 @@ func WebsocketRequest(w *websocket.Conn) {
 								Message:  "Save packet error",
 							}))
 					logger.Debug("SQL \"INSERT events\" error", "ID", connId, "message", err)
-					w.Write([]byte(err.Error()))
 					continue
 				}
 				var result sql.Result
@@ -431,7 +416,6 @@ func WebsocketRequest(w *websocket.Conn) {
 								Message:  "Save packet error",
 							}))
 					logger.Debug("SQL \"UPDATE elements\" error", "ID", connId, "message", err)
-					w.Write([]byte(err.Error()))
 					continue
 				}
 
@@ -451,7 +435,6 @@ func WebsocketRequest(w *websocket.Conn) {
 								Message:  "Save packet error",
 							}))
 					logger.Debug("SQL \"rows affected != 1\" error", "ID", connId, "message", err)
-					w.Write([]byte(err.Error()))
 					continue
 				}
 
@@ -469,7 +452,6 @@ func WebsocketRequest(w *websocket.Conn) {
 								Message:  "Save packet error",
 							}))
 					logger.Debug("SQL \"commit\" error", "ID", connId, "message", err)
-					w.Write([]byte(err.Error()))
 					continue
 				}
 			}
