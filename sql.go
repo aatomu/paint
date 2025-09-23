@@ -46,6 +46,7 @@ func CreateTables(db *sql.DB) error {
 		username   TEXT    NOT NULL,
 		operation  TEXT    NOT NULL,
 		undo       INTEGER NOT NULL,
+		disable    INTEGER NOT NULL,
 		created_at  INTEGER NOT NULL,
 		FOREIGN KEY(board_id) REFERENCES boards(board_id),
 		FOREIGN KEY(element_id) REFERENCES elements(element_id)
@@ -68,6 +69,7 @@ func GetBoardId(name string) (boardId string, err error) {
 	return
 }
 
+// MARK: transaction
 func NewTx() (t *Transaction, fr FunctionResult) {
 	var err error
 	tx, err := DB.Begin()
@@ -91,7 +93,6 @@ func NewTx() (t *Transaction, fr FunctionResult) {
 func (tx *Transaction) Commit() (fr FunctionResult) {
 	err := tx.transaction.Commit()
 	if err != nil {
-		tx.transaction.Rollback()
 		return FunctionResult{
 			err: err,
 			msg: FunctionMessage{
@@ -104,6 +105,7 @@ func (tx *Transaction) Commit() (fr FunctionResult) {
 	return
 }
 
+// MARK: > InsertEvent
 func (tx *Transaction) InsertEvent(e TableEvents) (fr FunctionResult) {
 	undoValue := 0
 	if e.undo {
@@ -112,11 +114,10 @@ func (tx *Transaction) InsertEvent(e TableEvents) (fr FunctionResult) {
 
 	_, err := tx.transaction.Exec(`
 		INSERT INTO events 
-			(event_id, board_id, element_id, username, operation, undo, created_at)
-			VALUES (?, ?, ?, ?, ?, ?, ?)`,
-		e.eventId, e.boardId, e.elementId, e.username, e.operation, undoValue, time.Now().UnixMilli())
+			(event_id, board_id, element_id, username, operation, undo, disable, created_at)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		e.eventId, e.boardId, e.elementId, e.username, e.operation, undoValue, 0, time.Now().UnixMilli())
 	if err != nil {
-		tx.transaction.Rollback()
 		return FunctionResult{
 			err: err,
 			msg: FunctionMessage{
@@ -182,6 +183,7 @@ func (tx *Transaction) UpdateEventUndo(eventId string, flag bool) (fr FunctionRe
 	return
 }
 
+// MARK: > InsertElement
 func (tx *Transaction) InsertElement(e TableElements) (fr FunctionResult) {
 	deletedValue := 0
 	if e.deleted {
@@ -194,7 +196,6 @@ func (tx *Transaction) InsertElement(e TableElements) (fr FunctionResult) {
 			VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
 		e.elementId, e.boardId, e.elementType, e.bold, e.color, e.opacity, e.property, deletedValue)
 	if err != nil {
-		tx.transaction.Rollback()
 		return FunctionResult{
 			err: err,
 			msg: FunctionMessage{
@@ -236,6 +237,7 @@ func (tx *Transaction) UpdateElementDeleted(boardId, elementId string, flag bool
 	if flag {
 		flagValue = 1
 	}
+
 	result, err := tx.transaction.Exec(`
 		UPDATE elements 
 			SET deleted = ?
@@ -243,7 +245,6 @@ func (tx *Transaction) UpdateElementDeleted(boardId, elementId string, flag bool
 		flagValue,
 		elementId, boardId)
 	if err != nil {
-		tx.transaction.Rollback()
 		return FunctionResult{
 			err: err,
 			msg: FunctionMessage{
@@ -256,7 +257,6 @@ func (tx *Transaction) UpdateElementDeleted(boardId, elementId string, flag bool
 	var n int64
 	n, err = result.RowsAffected()
 	if err != nil || n != 1 {
-		tx.transaction.Rollback()
 		return FunctionResult{
 			err: err,
 			msg: FunctionMessage{

@@ -113,6 +113,7 @@ type TableEvents struct {
 	username   string
 	operation  string
 	undo       bool
+	disable    bool  // Result only
 	created_at int64 // Result only
 }
 
