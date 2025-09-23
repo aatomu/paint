@@ -28,13 +28,14 @@ body {
     "line    line    line    line    line    line   " min-content
     "stamp   stamp   stamp   stamp   stamp   stamp  " min-content
     "delete  delete  delete  delete  delete  delete " min-content
+    "clear   clear   clear   clear   clear   clear  " min-content
     "pallet  pallet  pallet  pallet  pallet  pallet " min-content
     "opacity opacity opacity opacity opacity opacity" min-content
     "bold    bold    bold    bold    bold    bold   " min-content
     "undo    undo    undo    redo    redo    redo   " min-content
     "in      in      move    move    out     out    " min-content
     "link    link    link    link    link    link   " min-content
-    "nil     nil     nil     nil     nil     clear  " min-content
+    "png     png     png     svg     svg     svg    " min-content
     / 1fr 1fr 1fr 1fr 1fr 1fr;
   gap: 0.5ch;
 }
@@ -180,6 +181,25 @@ body {
   background-color: black;
 }
 
+.side-menu-area .clear-input {
+  padding: 0;
+
+  box-sizing: border-box;
+  height: 0lh;
+  width: 100%;
+  border-width: 0;
+
+  line-height: 0;
+  resize: none;
+  overflow: none;
+  transition: height 1s ease-in-out 0s;
+}
+
+.side-menu-area:has(input:checked) .clear-input {
+  border-width: 2px;
+  line-height: 1lh;
+  height: 1lh;
+}
 .zoom {
   position: absolute;
   bottom: 2ch;

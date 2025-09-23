@@ -48,6 +48,7 @@ type PacketEvent = {
     }
   | {
       operation: "clear";
+      data: PacketEventClear;
     }
   | {
       operation: "success";

@@ -31,6 +31,9 @@ const undoInput = document.getElementById("undo-input")
 /** @type HTMLInputElement */
 //@ts-expect-error
 const redoInput = document.getElementById("redo-input")
+/** @type HTMLInputElement */
+//@ts-expect-error
+const clearInput = document.getElementById("clear-input")
 
 // MARK: Vars
 /** @type {BoardConfigration} */
@@ -139,7 +142,7 @@ function pointerEvent(event) {
   //   }
   // }
 
-  if (callback)  console.log(JSON.stringify({ "event": "pointer", "callback": callback, "mode": pointer.mode }))
+  if (callback) console.log(JSON.stringify({ "event": "pointer", "callback": callback, "mode": pointer.mode }))
   pointer.isDownPrev = isDown
 }
 
@@ -437,6 +440,19 @@ redoInput.addEventListener("click", () => {
     operation: "redo",
     data: {}
   })
+})
+
+// MARK: #clear
+clearInput.addEventListener("input", () => {
+  if (clearInput.value === "clear board") {
+    sendPacket({
+      packet_id: UUIDv7(),
+      name: username,
+      operation: "clear",
+      data: {}
+    })
+    clearInput.value = ""
+  }
 })
 
 // MARK: ContentLoaded()
