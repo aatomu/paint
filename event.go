@@ -150,6 +150,21 @@ func (p PacketEvent) DeleteEvent(d *json.Decoder, eventId, boardId string) (se F
 		return fr
 	}
 
+	result, fr := tx.SelectElement(boardId, delete.Target)
+	if !fr.Ok() {
+		return fr
+	}
+
+	if result.deleted {
+		return FunctionResult{
+			err: fmt.Errorf("element deleted flag has true"),
+			msg: FunctionMessage{
+				client: "Invalid target element",
+				server: "Invalid target element",
+			},
+		}
+	}
+
 	fr = tx.UpdateElementDeleted(boardId, delete.Target, true)
 	if !fr.Ok() {
 		return fr
