@@ -191,6 +191,8 @@ func WebsocketRequest(w *websocket.Conn) {
 					Target: elementId,
 				}))
 		}
+
+		time.Sleep(50 * time.Millisecond)
 	}
 
 	// MARK: > Read loop
