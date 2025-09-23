@@ -154,6 +154,30 @@ func (tx *Transaction) InsertElement(e TableElements) (fr FunctionResult) {
 	return
 }
 
+// MARK: > SelectElement
+func (tx *Transaction) SelectElement(boardId, elementId string) (e TableElements, fr FunctionResult) {
+	qr := tx.transaction.QueryRow(`
+	SELECT element_id, board_id, element_type, bold, color, opacity, property, deleted
+		FROM elements 
+		WHERE board_id = ? AND element_id = ?`,
+		boardId, elementId)
+
+	var deletedValue int
+	err := qr.Scan(&e.elementId, &e.boardId, &e.elementType, &e.bold, &e.color, &e.opacity, &e.property, &deletedValue)
+	if err != nil {
+		return e, FunctionResult{
+			err: err,
+			msg: FunctionMessage{
+				client: "Nothing element",
+				server: "Nothing element",
+			},
+		}
+	}
+	e.deleted = deletedValue == 1
+
+	return
+}
+
 func (tx *Transaction) UpdateElementDeleted(boardId, elementId string, flag bool) (fr FunctionResult) {
 	flagValue := 0
 	if flag {
