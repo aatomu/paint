@@ -320,8 +320,9 @@ function pointerMove(event) {
       // @ts-expect-error
       const targetElements = document.elementsFromPoint(event.clientX, event.clientY)
       if (targetElements.length < 1) break
-      const target = targetElements[0]
-      if (!["path", "line", "text"].includes(target.localName)) break
+      let target = targetElements[0]
+      if (!["path", "line", "text","tspan"].includes(target.localName)) break
+      if (target.localName === "tspan" && target.parentElement) target = target.parentElement
 
       packet = {
         packet_id: UUIDv7(),
