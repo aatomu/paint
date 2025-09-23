@@ -301,3 +301,112 @@ func (p PacketEvent) UndoEvent(room, boardId string) (se FunctionResult) {
 
 	return
 }
+
+// MARK: Redo
+func (p PacketEvent) RedoEvent(room, boardId string) (se FunctionResult) {
+	// MARK: > Write DB
+	tx, fr := NewTx()
+	if !fr.Ok() {
+		return fr
+	}
+	defer tx.transaction.Rollback()
+
+	qr := tx.transaction.QueryRow(`
+	SELECT event_id, element_id, operation
+		FROM events 
+		WHERE board_id = ? AND undo = 1 AND disable = 0
+		ORDER BY id ASC 
+		LIMIT 1`,
+		boardId)
+
+	var eventId, elementId, operation string
+	err := qr.Scan(&eventId, &elementId, &operation)
+	if err != nil {
+		return FunctionResult{
+			err: err,
+			msg: FunctionMessage{
+				client: "Nothing redo event",
+				server: "Nothing redo event",
+			},
+		}
+	}
+
+	fr = tx.UpdateEventUndo(eventId, false)
+	if !fr.Ok() {
+		return fr
+	}
+
+	switch operation {
+	case "create": // MARK: >> create
+		fr = tx.UpdateElementDeleted(boardId, elementId, true)
+		if !fr.Ok() {
+			return fr
+		}
+
+		result, fr := tx.SelectElement(boardId, elementId)
+		if !fr.Ok() {
+			return fr
+		}
+
+		data := PacketEventCreate{
+			ElementId:   result.elementId,
+			ElementType: result.elementType,
+			Bold:        result.bold,
+			Color:       result.color,
+			Opacity:     result.opacity,
+			Property:    json.RawMessage(result.property),
+		}
+
+		fr = tx.Commit()
+		if !fr.Ok() {
+			return fr
+		}
+
+		TransferAll(room, PacketEvent{
+			PacketId:  "undo",
+			Name:      "server",
+			Operation: "create",
+		}.Set(data),
+		)
+
+	case "delete": // MARK: >> delete
+		result, fr := tx.SelectElement(boardId, elementId)
+		if !fr.Ok() {
+			return fr
+		}
+
+		if !result.deleted {
+			return FunctionResult{
+				err: fmt.Errorf("element deleted flag has false"),
+				msg: FunctionMessage{
+					client: "Invalid target element",
+					server: "Invalid target element",
+				},
+			}
+		}
+
+		fr = tx.UpdateElementDeleted(boardId, elementId, true)
+		if !fr.Ok() {
+			return fr
+		}
+
+		fr = tx.Commit()
+		if !fr.Ok() {
+			return fr
+		}
+
+		TransferAll(room,
+			PacketEvent{
+				PacketId:  "undo",
+				Name:      "server",
+				Operation: "delete",
+			}.Set(
+				PacketEventDelete{
+					Target: elementId,
+				},
+			),
+		)
+	}
+
+	return
+}
