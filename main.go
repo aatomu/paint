@@ -21,7 +21,7 @@ import (
 )
 
 var (
-	Listen    = ":1026"
+	Listen    = ":1025"
 	Rooms     = map[string]*Room{}
 	RoomsLock = sync.RWMutex{}
 	DB        *sql.DB
