@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -135,6 +136,63 @@ func WebsocketRequest(w *websocket.Conn) {
 
 	var packet string
 	var source = w.Request().RemoteAddr
+	// MARK: > send History
+	rows, err := DB.Query(`
+		SELECT element_id, username, operation, created_at
+			FROM events 
+			WHERE undo = 0 AND disable = 0 
+			ORDER BY id ASC;`,
+		boardId)
+	if err != nil {
+		logger.Error("Failed read history", "IP", source, "ID", connId, "message", err)
+		return
+	}
+	for rows.Next() {
+		var elementId, username, operation string
+		var created_at int64
+		err := rows.Scan(&elementId, &username, &operation, &created_at)
+		if err != nil {
+			logger.Error("Failed read history row", "IP", source, "ID", connId, "message", err)
+			return
+		}
+
+		packet := PacketEvent{
+			PacketId:  fmt.Sprintf("%d", created_at),
+			Name:      username,
+			Operation: operation,
+		}
+		switch operation {
+		case "create":
+			qr := DB.QueryRow(`
+			SELECT element_type, bold, color, opacity, property
+				FROM elements 
+				WHERE board_id = ? AND element_id = ?`,
+				boardId, elementId)
+
+			var elementType, color, property string
+			var bold, opacity float64
+			err := qr.Scan(&elementType, &bold, &color, &opacity, &property)
+			if err != nil {
+				logger.Error("Failed read history elements", "IP", source, "ID", connId, "message", err)
+				return
+			}
+			websocket.JSON.Send(w, packet.
+				Set(PacketEventCreate{
+					ElementId:   elementId,
+					ElementType: elementType,
+					Bold:        bold,
+					Color:       color,
+					Opacity:     opacity,
+					Property:    json.RawMessage(property),
+				}))
+		case "delete":
+			websocket.JSON.Send(w, packet.
+				Set(PacketEventDelete{
+					Target: elementId,
+				}))
+		}
+	}
+
 	// MARK: > Read loop
 	for {
 		err := websocket.Message.Receive(w, &packet)
