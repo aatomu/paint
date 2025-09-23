@@ -172,7 +172,7 @@ func (tx *Transaction) UpdateEventUndo(eventId string, flag bool) (fr FunctionRe
 	n, err = result.RowsAffected()
 	if err != nil || n != 1 {
 		return FunctionResult{
-			err: err,
+			err: fmt.Errorf("%s, rows:%d", err, n),
 			msg: FunctionMessage{
 				client: "Failed read event",
 				server: "Failed SQL \"update events.undo\" not match the expected count of 1row",
@@ -258,7 +258,7 @@ func (tx *Transaction) UpdateElementDeleted(boardId, elementId string, flag bool
 	n, err = result.RowsAffected()
 	if err != nil || n != 1 {
 		return FunctionResult{
-			err: err,
+			err: fmt.Errorf("%s, rows:%d", err, n),
 			msg: FunctionMessage{
 				client: "Failed save event",
 				server: "Failed SQL \"update elements.deleted\" not match the expected count of 1row",
