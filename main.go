@@ -174,14 +174,14 @@ func WebsocketRequest(w *websocket.Conn) {
 		case "create": // MARK: >>> Create
 			result := event.CreateEvent(dataDecoder, eventId, boardId)
 			if !result.Ok() {
-				websocket.JSON.Send(w, result.msg.client)
+				websocket.JSON.Send(w, event.Error(result.msg.client))
 				logger.Debug(result.msg.server, "ID", connId, "message", result.err)
 				continue
 			}
 		case "delete": // MARK: >>> Delete
 			result := event.DeleteEvent(dataDecoder, eventId, boardId)
 			if !result.Ok() {
-				websocket.JSON.Send(w, result.msg.client)
+				websocket.JSON.Send(w, event.Error(result.msg.client))
 				logger.Debug(result.msg.server, "ID", connId, "message", result.err)
 				continue
 			}
@@ -189,7 +189,7 @@ func WebsocketRequest(w *websocket.Conn) {
 		case "undo": // MARK: >>> Undo
 			result := event.UndoEvent(room, boardId)
 			if !result.Ok() {
-				websocket.JSON.Send(w, result.msg.client)
+				websocket.JSON.Send(w, event.Error(result.msg.client))
 				logger.Debug(result.msg.server, "ID", connId, "message", result.err)
 				continue
 			}
@@ -202,36 +202,20 @@ func WebsocketRequest(w *websocket.Conn) {
 				continue
 			}
 
-						TransferAll(room,
-							PacketEvent{
-								PacketId:  "redo",
-								Name:      "server",
-								Operation: "delete",
-							}.Set(
-								PacketEventDelete{
-									Target: element_id,
-								},
-							),
-						)
-					}
-				}
-			}
 		default: // MARK: >>> default
-			{
-				// ! Invalid Event.Operation Type
-				websocket.JSON.Send(w,
-					PacketEvent{
-						PacketId:  "notify",
-						Name:      "server",
-						Operation: "error",
-					}.Set(
-						PacketEventError{
-							PacketId: event.PacketId,
-							Message:  "Unknown packet error",
-						}))
-				logger.Debug("PacketEvent.Operation unknown", "ID", connId, "message", event)
-				continue
-			}
+			// ! Invalid Event.Operation Type
+			websocket.JSON.Send(w,
+				PacketEvent{
+					PacketId:  "notify",
+					Name:      "server",
+					Operation: "error",
+				}.Set(
+					PacketEventError{
+						PacketId: event.PacketId,
+						Message:  "Unknown packet error",
+					}))
+			logger.Debug("PacketEvent.Operation unknown", "ID", connId, "message", event)
+			continue
 		}
 
 		// Send success

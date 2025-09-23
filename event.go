@@ -83,6 +83,7 @@ func (p PacketEvent) CreateEvent(d *json.Decoder, eventId, boardId string) (fr F
 	if !fr.Ok() {
 		return fr
 	}
+	defer tx.transaction.Rollback()
 
 	fr = tx.InsertEvent(TableEvents{
 		eventId:   eventId,
@@ -137,6 +138,7 @@ func (p PacketEvent) DeleteEvent(d *json.Decoder, eventId, boardId string) (se F
 	if !fr.Ok() {
 		return fr
 	}
+	defer tx.transaction.Rollback()
 
 	fr = tx.InsertEvent(TableEvents{
 		eventId:   eventId,
@@ -185,19 +187,19 @@ func (p PacketEvent) UndoEvent(room, boardId string) (se FunctionResult) {
 	if !fr.Ok() {
 		return fr
 	}
+	defer tx.transaction.Rollback()
 
 	qr := tx.transaction.QueryRow(`
-	SELECT event_id, element_id, username, operation
+	SELECT event_id, element_id, operation
 		FROM events 
-		WHERE undo = 0 AND board_id = ?
+		WHERE board_id = ? AND undo = 0 AND disable = 0
 		ORDER BY id DESC 
 		LIMIT 1`,
 		boardId)
 
-	var eventId, elementId, name, operation string
-	err := qr.Scan(&eventId, &elementId, &name, &operation)
-	if err := qr.Err(); err != nil {
-		tx.transaction.Rollback()
+	var eventId, elementId, operation string
+	err := qr.Scan(&eventId, &elementId, &operation)
+	if err != nil {
 		return FunctionResult{
 			err: err,
 			msg: FunctionMessage{
@@ -207,37 +209,28 @@ func (p PacketEvent) UndoEvent(room, boardId string) (se FunctionResult) {
 		}
 	}
 
-	result, err := tx.transaction.Exec(`
-	UPDATE events 
-		SET undo = 1
-		WHERE event_id = ?`,
-		eventId)
-	if err != nil {
-		tx.transaction.Rollback()
-		return FunctionResult{
-			err: err,
-			msg: FunctionMessage{
-				client: "Failed read event",
-				server: "Failed SQL \"update events.undo\"",
-			},
-		}
-	}
-
-	var n int64
-	n, err = result.RowsAffected()
-	if err != nil || n != 1 {
-		tx.transaction.Rollback()
-		return FunctionResult{
-			err: err,
-			msg: FunctionMessage{
-				client: "Failed read event",
-				server: "Failed SQL \"update events.undo\" not match the expected count of 1row",
-			},
-		}
+	fr = tx.UpdateEventUndo(eventId, true)
+	if !fr.Ok() {
+		return fr
 	}
 
 	switch operation {
 	case "create": // MARK: >> create
+		result, fr := tx.SelectElement(boardId, elementId)
+		if !fr.Ok() {
+			return fr
+		}
+
+		if !result.deleted {
+			return FunctionResult{
+				err: fmt.Errorf("element deleted flag has false"),
+				msg: FunctionMessage{
+					client: "Invalid target element",
+					server: "Invalid target element",
+				},
+			}
+		}
+
 		fr = tx.UpdateElementDeleted(boardId, elementId, true)
 		if !fr.Ok() {
 			return fr
@@ -265,25 +258,18 @@ func (p PacketEvent) UndoEvent(room, boardId string) (se FunctionResult) {
 			return fr
 		}
 
-		data := PacketEventCreate{
-			ElementId: elementId,
+		result, fr := tx.SelectElement(boardId, elementId)
+		if !fr.Ok() {
+			return fr
 		}
-		qr := tx.transaction.QueryRow(`
-			SELECT element_type, bold, color, opacity, property
-				FROM elements 
-				WHERE board_id = ? AND element_id = ?`,
-			boardId, elementId)
 
-		err := qr.Scan(&data.ElementType, &data.Bold, &data.Color, &data.Opacity, &data.Property)
-		if err != nil {
-			tx.transaction.Rollback()
-			return FunctionResult{
-				err: err,
-				msg: FunctionMessage{
-					client: "Nothing element",
-					server: "Nothing element",
-				},
-			}
+		data := PacketEventCreate{
+			ElementId:   result.elementId,
+			ElementType: result.elementType,
+			Bold:        result.bold,
+			Color:       result.color,
+			Opacity:     result.opacity,
+			Property:    json.RawMessage(result.property),
 		}
 
 		fr = tx.Commit()
