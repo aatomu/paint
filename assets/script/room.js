@@ -439,7 +439,7 @@ redoInput.addEventListener("click", () => {
   })
 })
 
-// MARK: Websocket
+// MARK: ContentLoaded()
 window.addEventListener("DOMContentLoaded", () => {
   updateBoard()
   updateColor("#000000")
@@ -447,6 +447,8 @@ window.addEventListener("DOMContentLoaded", () => {
   updateBold("15")
 
   const url = new URL(window.location.href)
+  document.title += `- ${url.searchParams.get("id") ?? "unknown"}`
+
   url.pathname = "/ws"
   ws = new WebSocket(url.href)
 
