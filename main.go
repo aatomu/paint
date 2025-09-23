@@ -262,6 +262,14 @@ func WebsocketRequest(w *websocket.Conn) {
 				continue
 			}
 
+		case "clear": // MARK: >>> Clear
+			result := event.ClearEvent(boardId)
+			if !result.Ok() {
+				websocket.JSON.Send(w, event.Error(result.msg.client))
+				logger.Debug(result.msg.server, "ID", connId, "message", result.err)
+				continue
+			}
+
 		default: // MARK: >>> default
 			// ! Invalid Event.Operation Type
 			websocket.JSON.Send(w,

@@ -445,12 +445,15 @@ redoInput.addEventListener("click", () => {
 // MARK: #clear
 clearInput.addEventListener("input", () => {
   if (clearInput.value === "clear board") {
-    sendPacket({
+    /** @type {PacketEvent} */
+    const packet = {
       packet_id: UUIDv7(),
       name: username,
       operation: "clear",
       data: {}
-    })
+    }
+    sendPacket(packet)
+    packetStack[packet.packet_id] = packet
     clearInput.value = ""
   }
 })
@@ -506,17 +509,22 @@ window.addEventListener("DOMContentLoaded", () => {
         break
       }
       case "clear": { //MARK: >> clear
-
+        window.location.reload()
         break
       }
       case "success": { //MARK: >> success
         const success_packet = packetStack[packet.data.packet_id]
         if (!success_packet) break
 
-        if (success_packet.operation == "delete") {
-          const target = document.getElementById(success_packet.data.target)
-          if (target) target.remove()
-          break
+        switch (success_packet.operation) {
+          case "delete": {
+            const target = document.getElementById(success_packet.data.target)
+            if (target) target.remove()
+            break
+          }
+          case "clear": {
+            window.location.reload()
+          }
         }
 
         delete packetStack[packet.data.packet_id]

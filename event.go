@@ -396,3 +396,61 @@ func (p PacketEvent) RedoEvent(room, boardId string) (se FunctionResult) {
 
 	return
 }
+
+func (p PacketEvent) ClearEvent(boardId string) (se FunctionResult) {
+	// MARK: > Write DB
+	tx, fr := NewTx()
+	if !fr.Ok() {
+		return fr
+	}
+	defer tx.transaction.Rollback()
+
+	result, err := tx.transaction.Exec(`
+		DELETE
+			FROM events
+			WHERE board_id = ?`,
+		boardId)
+	if err != nil {
+		return FunctionResult{
+			err: err,
+			msg: FunctionMessage{
+				client: "Failed reset board",
+				server: "Failed SQL \"delete events\"",
+			},
+		}
+	}
+
+	var n int64
+	n, err = result.RowsAffected()
+	if err != nil || n < 1 {
+		return FunctionResult{
+			err: fmt.Errorf("%s, rows:%d", err, n),
+			msg: FunctionMessage{
+				client: "Failed reset board",
+				server: "Failed SQL \"delete events\" not match the expected count more than 1row",
+			},
+		}
+	}
+
+	_, err = tx.transaction.Exec(`
+		DELETE
+			FROM elements
+			WHERE board_id = ?`,
+		boardId)
+	if err != nil {
+		return FunctionResult{
+			err: err,
+			msg: FunctionMessage{
+				client: "Failed reset board",
+				server: "Failed SQL \"delete elements\"",
+			},
+		}
+	}
+
+	fr = tx.Commit()
+	if !fr.Ok() {
+		return fr
+	}
+
+	return
+}
