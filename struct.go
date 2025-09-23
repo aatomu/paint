@@ -3,15 +3,12 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"path"
 	"strings"
 	"sync"
-	"time"
 
-	"github.com/google/uuid"
 	"golang.org/x/net/websocket"
 )
 
@@ -90,6 +87,39 @@ type PacketEventError struct {
 	Message  string `json:"message"`
 }
 
+// MARK: SQL
+type TableBoards struct {
+	boardId    string
+	name       string
+	created_at int64
+}
+
+type TableElements struct {
+	elementId   string
+	boardId     string
+	elementType string
+	bold        float64
+	color       string
+	opacity     float64
+	property    string
+	deleted     bool
+}
+
+type TableEvents struct {
+	id         int64 // Result only
+	eventId    string
+	boardId    string
+	elementId  string
+	username   string
+	operation  string
+	undo       bool
+	created_at int64 // Result only
+}
+
+type Transaction struct {
+	transaction *sql.Tx
+}
+
 // MARK: Generic
 type PropertyPen struct {
 	D string `json:"d"`
@@ -103,63 +133,18 @@ type PropertyStamp struct {
 	Text string     `json:"text"` // ["aaa","bbb", ...]
 }
 
-func CreateTables(db *sql.DB) error {
-	_, err := db.Exec(`
-	CREATE TABLE IF NOT EXISTS boards (
-		board_id               TEXT    PRIMARY KEY,
-		name             TEXT    NOT NULL,
-		create_at INTEGER NOT NULL
-	)`)
-	if err != nil {
-		return fmt.Errorf("%s(in boards)", err.Error())
-	}
-
-	_, err = db.Exec(`
-	CREATE TABLE IF NOT EXISTS elements (
-		element_id TEXT    NOT NULL,
-		board_id   TEXT    NOT NULL,
-		type       TEXT    NOT NULL,
-		bold       REAL    NOT NULL,
-		color      TEXT    NOT NULL,
-		opacity    REAL    NOT NULL,
-		property   TEXT    NOT NULL,
-		deleted    INTEGER NOT NULL,
-		PRIMARY KEY (element_id,board_id),
-		FOREIGN KEY(board_id) REFERENCES boards(board_id)
-	)`)
-	if err != nil {
-		return fmt.Errorf("%s(in elements)", err.Error())
-	}
-
-	_, err = db.Exec(`
-	CREATE TABLE IF NOT EXISTS events (
-		id      INTEGER PRIMARY KEY AUTOINCREMENT,
-		event_id   TEXT    NOT NULL UNIQUE,
-		board_id   TEXT    NOT NULL,
-		element_id TEXT,
-		username   TEXT    NOT NULL,
-		operation  TEXT    NOT NULL,
-		undo       INTEGER NOT NULL,
-		create_at  INTEGER NOT NULL,
-		FOREIGN KEY(board_id) REFERENCES boards(board_id),
-		FOREIGN KEY(element_id) REFERENCES elements(element_id)
-	)`)
-	if err != nil {
-		return fmt.Errorf("%s(in events)", err.Error())
-	}
-
-	return nil
+type FunctionResult struct {
+	err error
+	msg FunctionMessage
 }
 
-func GetBoardId(name string) (boardId string, err error) {
-	err = DB.QueryRow("SELECT board_id FROM boards WHERE name = ?", name).Scan(&boardId)
-	if err == sql.ErrNoRows {
-		boardId = uuid.New().String()
-		now := time.Now().Unix()
-		_, err = DB.Exec("INSERT INTO boards (board_id, name, create_at) VALUES (?, ?, ?)", boardId, name, now)
-		return
-	}
-	return
+type FunctionMessage struct {
+	server string
+	client string
+}
+
+func (se FunctionResult) Ok() bool {
+	return se.err == nil
 }
 
 func NewDecoder(r io.Reader) (d *json.Decoder) {
