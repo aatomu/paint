@@ -70,15 +70,15 @@ type PacketEventCreate = {
   opacity: number;
 } & (
   | {
-      type: "pen";
+      element_type: "pen";
       property: PropertyPen;
     }
   | {
-      type: "line";
+      element_type: "line";
       property: PropertyLine;
     }
   | {
-      type: "stamp";
+      element_type: "stamp";
       property: PropertyStamp;
     }
 );

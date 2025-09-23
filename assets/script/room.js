@@ -190,7 +190,7 @@ function pointerDown(event) {
           bold: boardConfig.bold,
           color: boardConfig.color,
           opacity: boardConfig.opacity,
-          type: "pen",
+          element_type: "pen",
           property: {
             d: `M${fixedString(pos[0])},${fixedString(pos[1])}`
           }
@@ -209,7 +209,7 @@ function pointerDown(event) {
           bold: boardConfig.bold,
           color: boardConfig.color,
           opacity: boardConfig.opacity,
-          type: "line",
+          element_type: "line",
           property: {
             start: [fixedNumber(pos[0]), fixedNumber(pos[1])],
             end: [fixedNumber(pos[0]), fixedNumber(pos[1])],
@@ -232,7 +232,7 @@ function pointerDown(event) {
           bold: boardConfig.bold,
           color: boardConfig.color,
           opacity: boardConfig.opacity,
-          type: "stamp",
+          element_type: "stamp",
           property: {
             pos: [fixedNumber(pos[0]), fixedNumber(pos[1])],
             text: JSON.stringify(stampLines)
@@ -277,7 +277,7 @@ function pointerMove(event) {
     }
     case "pen": { //MARK: >> pen
       if (packet.operation != "create") return
-      if (packet.data.type != "pen") return
+      if (packet.data.element_type != "pen") return
       const pen = document.getElementById(packet.data.element_id)
       if (!pen) return
 
@@ -287,7 +287,7 @@ function pointerMove(event) {
     }
     case "line": { //MARK: >> line
       if (packet.operation != "create") return
-      if (packet.data.type != "line") return
+      if (packet.data.element_type != "line") return
       const line = document.getElementById(packet.data.element_id)
       if (!line) return
 
@@ -299,7 +299,7 @@ function pointerMove(event) {
     }
     case "stamp": { //MARK: >> stamp
       if (packet.operation != "create") return
-      if (packet.data.type != "stamp") return
+      if (packet.data.element_type != "stamp") return
       const stamp = document.getElementById(packet.data.element_id)
       if (!stamp) return
 
@@ -554,7 +554,7 @@ window.addEventListener("DOMContentLoaded", () => {
  * @param {PacketEventCreate} element
  */
 function createElement(element) {
-  switch (element.type) {
+  switch (element.element_type) {
     case "pen": { // MARK: > pen
       const pen = document.createElementNS("http://www.w3.org/2000/svg", "path");
       pen.id = element.element_id

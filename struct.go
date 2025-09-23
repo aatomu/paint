@@ -63,12 +63,12 @@ type PacketEventMouse struct {
 }
 
 type PacketEventCreate struct {
-	ElementId string          `json:"element_id"`
-	Type      string          `json:"type"` // "pen"|"line"|"stamp"
-	Bold      float64         `json:"bold"`
-	Color     string          `json:"color"`
-	Opacity   float64         `json:"opacity"`
-	Property  json.RawMessage `json:"property"`
+	ElementId   string          `json:"element_id"`
+	ElementType string          `json:"element_type"` // "pen"|"line"|"stamp"
+	Bold        float64         `json:"bold"`
+	Color       string          `json:"color"`
+	Opacity     float64         `json:"opacity"`
+	Property    json.RawMessage `json:"property"`
 }
 
 type PacketEventDelete struct {
