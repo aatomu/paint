@@ -126,6 +126,59 @@ func (tx *Transaction) InsertEvent(e TableEvents) (fr FunctionResult) {
 		}
 	}
 
+	_, err = tx.transaction.Exec(`
+		UPDATE events 
+			SET disable = 1
+			WHERE board_id = ? AND undo = 1`,
+		e.boardId)
+	if err != nil {
+		return FunctionResult{
+			err: err,
+			msg: FunctionMessage{
+				client: "Failed save event",
+				server: "Failed SQL \"update events.disable\"",
+			},
+		}
+	}
+
+	return
+}
+
+// MARK: > UpdateEventUndo
+func (tx *Transaction) UpdateEventUndo(eventId string, flag bool) (fr FunctionResult) {
+	undoValue := 0
+	if flag {
+		undoValue = 1
+	}
+
+	result, err := tx.transaction.Exec(`
+	UPDATE events 
+		SET undo = ?
+		WHERE event_id = ?`,
+		undoValue,
+		eventId)
+	if err != nil {
+		return FunctionResult{
+			err: err,
+			msg: FunctionMessage{
+				client: "Failed read event",
+				server: "Failed SQL \"update events.undo\"",
+			},
+		}
+	}
+
+	var n int64
+	n, err = result.RowsAffected()
+	if err != nil || n != 1 {
+		return FunctionResult{
+			err: err,
+			msg: FunctionMessage{
+				client: "Failed read event",
+				server: "Failed SQL \"update events.undo\" not match the expected count of 1row",
+			},
+		}
+	}
+
 	return
 }
 
