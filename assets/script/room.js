@@ -459,7 +459,13 @@ clearInput.addEventListener("input", () => {
 })
 
 // MARK: ContentLoaded()
-window.addEventListener("DOMContentLoaded", () => {
+if (document.readyState == "complete") {
+  Initialize()
+} else {
+  window.addEventListener("DOMContentLoaded", Initialize)
+}
+
+function Initialize() {
   updateBoard()
   updateColor("#000000")
   updateColor("#000000")
@@ -573,7 +579,7 @@ window.addEventListener("DOMContentLoaded", () => {
     console.log(JSON.stringify({ "event": "websocket", "callback": "close" }), event)
 
   })
-})
+}
 
 // MARK: createElement()
 /**
