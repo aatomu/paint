@@ -252,14 +252,6 @@ function pointerDown(event) {
       break
     }
     case "delete": { //MARK: >> delete
-      packet = {
-        packet_id: "",
-        name: username,
-        operation: "delete",
-        data: {
-          target: ""
-        }
-      }
       break
     }
   }
@@ -330,6 +322,7 @@ function pointerMove(event) {
       if (!["path", "line", "text", "tspan"].includes(target.localName)) break
       if (target.localName === "tspan" && target.parentElement) target = target.parentElement
 
+      target.style.display = "none"
       packet = {
         packet_id: UUIDv7(),
         name: username,
@@ -452,8 +445,7 @@ redoInput.addEventListener("click", () => {
 // MARK: #clear
 clearInput.addEventListener("input", () => {
   if (clearInput.value === "clear board") {
-    /** @type {PacketEvent} */
-    const packet = {
+    packet = {
       packet_id: UUIDv7(),
       name: username,
       operation: "clear",
@@ -537,7 +529,7 @@ function WebsocketMessage(event) {
   //   c<=>s :"mouse"|"create"|"delete"|"undo"|"redo"|"clear"
   //   s=>c :"success"|"error"
   /** @type {PacketEvent} */
-  const packet = JSON.parse(event.data)
+  packet = JSON.parse(event.data)
   switch (packet.operation) {
     case "mouse": { //MARK: >> mouse
       break
@@ -595,6 +587,8 @@ function WebsocketMessage(event) {
           break
         }
         case "delete": {
+          const target = document.getElementById(error_packet.data.target)
+          if (target) target.style.display = ""
           break
         }
         case "undo": {
