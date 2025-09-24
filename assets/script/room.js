@@ -38,8 +38,8 @@ const clearInput = document.getElementById("clear-input")
 // MARK: Vars
 /** @type {BoardConfigration} */
 const boardConfig = {
-  scale: 1,
-  offset: [0, 0],
+  scale: 0.3,
+  offset: [50, 150],
   color: "",
   opacity: 1,
   bold: 15,
