@@ -27,6 +27,14 @@ type PacketEvent = {
       data: null;
     }
   | {
+      operation: "heatbeat";
+      data: PacketEventHeatBeat;
+    }
+  | {
+      operation: "history";
+      data: PacketEventHistory;
+    }
+  | {
       operation: "mouse";
       data: PacketEventMouse;
     }
@@ -59,6 +67,10 @@ type PacketEvent = {
       data: PacketEventError;
     }
 );
+
+type PacketEventHeatBeat = {};
+
+type PacketEventHistory = {};
 
 type PacketEventMouse = {
   pos: [number, number];

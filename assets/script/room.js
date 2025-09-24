@@ -321,7 +321,7 @@ function pointerMove(event) {
       const targetElements = document.elementsFromPoint(event.clientX, event.clientY)
       if (targetElements.length < 1) break
       let target = targetElements[0]
-      if (!["path", "line", "text","tspan"].includes(target.localName)) break
+      if (!["path", "line", "text", "tspan"].includes(target.localName)) break
       if (target.localName === "tspan" && target.parentElement) target = target.parentElement
 
       packet = {
@@ -478,10 +478,28 @@ function Initialize() {
   url.pathname = "/ws"
   ws = new WebSocket(url.href)
 
+  var heatbeatId = -1
   //MARK: > open
   /** @param {Event} event*/
   ws.addEventListener("open", (event) => {
     console.log(JSON.stringify({ "event": "websocket", "callback": "open" }), event)
+
+    sendPacket({
+      packet_id: new Date().getTime().toString(),
+      name: username,
+      operation: "history",
+      data: {}
+    })
+
+    // @ts-expect-error
+    heatbeatId = setInterval(() => {
+      sendPacket({
+        packet_id: new Date().getTime().toString(),
+        name: username,
+        operation: "heatbeat",
+        data: {}
+      })
+    }, 5000)
   })
 
   //MARK: > message
@@ -579,6 +597,7 @@ function Initialize() {
   ws.addEventListener("close", (event) => {
     console.log(JSON.stringify({ "event": "websocket", "callback": "close" }), event)
 
+    clearInterval(heatbeatId)
   })
 }
 

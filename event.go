@@ -4,6 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"time"
+
+	"golang.org/x/net/websocket"
 )
 
 func (p PacketEvent) Error(msg string) PacketEvent {
@@ -16,6 +19,73 @@ func (p PacketEvent) Error(msg string) PacketEvent {
 			PacketId: p.PacketId,
 			Message:  msg,
 		})
+}
+
+// MARK; History
+func (p PacketEvent) HistoryEvent(boardId string, w *websocket.Conn) (fr FunctionResult) {
+	rows, err := DB.Query(`
+	SELECT h.element_id, h.username, h.operation, h.created_at, e.element_type, e.bold, e.color, e.opacity, e.property
+		FROM (
+			SELECT board_id, element_id, username, operation, created_at
+			FROM events
+			WHERE undo = 0 AND disable = 0 AND board_id = ?
+			ORDER BY id ASC
+			) AS h
+		JOIN elements AS e
+			ON h.element_id = e.element_id AND h.board_id = e.board_id`,
+		boardId)
+	if err != nil {
+		return FunctionResult{
+			err: err,
+			msg: FunctionMessage{
+				client: "Failed read historys",
+				server: "Failed SQL \"select * from events join elements\"",
+			},
+		}
+	}
+
+	for rows.Next() {
+		var elementId, username, operation, elementType, color, property string
+		var created_at int64
+		var bold, opacity float64
+		err := rows.Scan(&elementId, &username, &operation, &created_at, &elementType, &bold, &color, &opacity, &property)
+		if err != nil {
+			return FunctionResult{
+				err: err,
+				msg: FunctionMessage{
+					client: "Failed read history",
+					server: "Failed read history",
+				},
+			}
+		}
+
+		packet := PacketEvent{
+			PacketId:  fmt.Sprintf("%d", created_at),
+			Name:      username,
+			Operation: operation,
+		}
+		switch operation {
+		case "create":
+			websocket.JSON.Send(w, packet.
+				Set(PacketEventCreate{
+					ElementId:   elementId,
+					ElementType: elementType,
+					Bold:        bold,
+					Color:       color,
+					Opacity:     opacity,
+					Property:    json.RawMessage(property),
+				}))
+		case "delete":
+			websocket.JSON.Send(w, packet.
+				Set(PacketEventDelete{
+					Target: elementId,
+				}))
+		}
+
+		time.Sleep(100 * time.Millisecond)
+	}
+
+	return
 }
 
 // MARK: Create
