@@ -216,21 +216,6 @@ func (p PacketEvent) UndoEvent(room, boardId string) (se FunctionResult) {
 
 	switch operation {
 	case "create": // MARK: >> create
-		result, fr := tx.SelectElement(boardId, elementId)
-		if !fr.Ok() {
-			return fr
-		}
-
-		if !result.deleted {
-			return FunctionResult{
-				err: fmt.Errorf("element deleted flag has false"),
-				msg: FunctionMessage{
-					client: "Invalid target element",
-					server: "Invalid target element",
-				},
-			}
-		}
-
 		fr = tx.UpdateElementDeleted(boardId, elementId, true)
 		if !fr.Ok() {
 			return fr
@@ -356,21 +341,6 @@ func (p PacketEvent) RedoEvent(room, boardId string) (se FunctionResult) {
 		)
 
 	case "delete": // MARK: >> delete
-		result, fr := tx.SelectElement(boardId, elementId)
-		if !fr.Ok() {
-			return fr
-		}
-
-		if !result.deleted {
-			return FunctionResult{
-				err: fmt.Errorf("element deleted flag has false"),
-				msg: FunctionMessage{
-					client: "Invalid target element",
-					server: "Invalid target element",
-				},
-			}
-		}
-
 		fr = tx.UpdateElementDeleted(boardId, elementId, true)
 		if !fr.Ok() {
 			return fr
