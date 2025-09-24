@@ -529,17 +529,17 @@ function WebsocketMessage(event) {
   //   c<=>s :"mouse"|"create"|"delete"|"undo"|"redo"|"clear"
   //   s=>c :"success"|"error"
   /** @type {PacketEvent} */
-  packet = JSON.parse(event.data)
-  switch (packet.operation) {
+  const receivePacket = JSON.parse(event.data)
+  switch (receivePacket.operation) {
     case "mouse": { //MARK: >> mouse
       break
     }
     case "create": { //MARK: >> create
-      createElement(packet.data)
+      createElement(receivePacket.data)
       break
     }
     case "delete": { //MARK: >> delete
-      const target = document.getElementById(packet.data.target)
+      const target = document.getElementById(receivePacket.data.target)
       if (target) target.remove()
       break
     }
@@ -556,7 +556,7 @@ function WebsocketMessage(event) {
       break
     }
     case "success": { //MARK: >> success
-      const success_packet = packetStack[packet.data.packet_id]
+      const success_packet = packetStack[receivePacket.data.packet_id]
       if (!success_packet) break
 
       switch (success_packet.operation) {
@@ -570,11 +570,11 @@ function WebsocketMessage(event) {
         }
       }
 
-      delete packetStack[packet.data.packet_id]
+      delete packetStack[receivePacket.data.packet_id]
       break
     }
     case "error": { //MARK: >> error
-      const error_packet = packetStack[packet.data.packet_id]
+      const error_packet = packetStack[receivePacket.data.packet_id]
       if (!error_packet) break
 
       switch (error_packet.operation) {
