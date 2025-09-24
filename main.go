@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -183,15 +182,14 @@ func WebsocketRequest(w *websocket.Conn) {
 			}
 
 		case "mouse": // MARK: >>> Mouse
-			{
-				err = dataDecoder.Decode(&PacketEventMouse{})
-				if err != nil {
-					// ! Invalid Event Property
-					websocket.JSON.Send(w, event.Error("PacketEventMouse marshal error."))
-					logger.Debug("PacketEventMouse marshal error", "ID", connId, "message", event)
-					continue
-				}
+			err = dataDecoder.Decode(&PacketEventMouse{})
+			if err != nil {
+				// ! Invalid Event Property
+				websocket.JSON.Send(w, event.Error("PacketEventMouse marshal error."))
+				logger.Debug("PacketEventMouse marshal error", "ID", connId, "message", event)
+				continue
 			}
+
 		case "create": // MARK: >>> Create
 			result := event.CreateEvent(dataDecoder, eventId, boardId)
 			if !result.Ok() {
@@ -199,6 +197,7 @@ func WebsocketRequest(w *websocket.Conn) {
 				logger.Debug(result.msg.server, "ID", connId, "message", result.err)
 				continue
 			}
+
 		case "delete": // MARK: >>> Delete
 			result := event.DeleteEvent(dataDecoder, eventId, boardId)
 			if !result.Ok() {
