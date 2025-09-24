@@ -54,8 +54,14 @@ const pointer = {
   notify: 0
 }
 
-/** @type {WebSocket|null} */
-let ws = null
+/** @type {TransactionConfigration} */
+const transaction = {
+  requestHistory: true,
+  ws: null,
+  heartbeatId: -1,
+  startTime: 0,
+  retry: 0,
+}
 
 const username = getCookie("name") ?? ""
 
@@ -475,131 +481,186 @@ function Initialize() {
   const url = new URL(window.location.href)
   document.title += `- ${url.searchParams.get("id") ?? "unknown"}`
 
+  NewWebsocket()
+}
+
+// MARK: NewWebsocket()
+function NewWebsocket() {
+  const url = new URL(window.location.href)
   url.pathname = "/ws"
-  ws = new WebSocket(url.href)
+  transaction.ws = new WebSocket(url.href)
 
-  var heatbeatId = -1
-  //MARK: > open
-  /** @param {Event} event*/
-  ws.addEventListener("open", (event) => {
-    console.log(JSON.stringify({ "event": "websocket", "callback": "open" }), event)
+  transaction.ws.addEventListener("open", WebsocketOpen)
+  transaction.ws.addEventListener("message", WebsocketMessage)
+  transaction.ws.addEventListener("error", WebSocketError)
+  transaction.ws.addEventListener("close", WebsocketClose)
+}
 
+// MARK: WebsocketOpen()
+/**
+ * @param {Event} event
+ */
+function WebsocketOpen(event) {
+  console.log(JSON.stringify({ "event": "websocket", "callback": "open" }), event)
+
+  transaction.startTime = new Date().getTime()
+
+  if (transaction.requestHistory) {
     sendPacket({
       packet_id: new Date().getTime().toString(),
       name: username,
       operation: "history",
       data: {}
     })
+    transaction.requestHistory = false
+  }
 
-    // @ts-expect-error
-    heatbeatId = setInterval(() => {
-      sendPacket({
-        packet_id: new Date().getTime().toString(),
-        name: username,
-        operation: "heatbeat",
-        data: {}
-      })
-    }, 5000)
-  })
-
-  //MARK: > message
-  /** @param {MessageEvent} event*/
-  ws.addEventListener("message", (event) => {
-    console.log(JSON.stringify({ "event": "websocket", "callback": "message" }), event)
-
-
-    //   c<=>s :"mouse"|"create"|"delete"|"undo"|"redo"|"clear"
-    //   s=>c :"success"|"error"
-    /** @type {PacketEvent} */
-    const packet = JSON.parse(event.data)
-    switch (packet.operation) {
-      case "mouse": { //MARK: >> mouse
-        break
-      }
-      case "create": { //MARK: >> create
-        createElement(packet.data)
-        break
-      }
-      case "delete": { //MARK: >> delete
-        const target = document.getElementById(packet.data.target)
-        if (target) target.remove()
-        break
-      }
-      case "undo": { //MARK: >> undo
-
-        break
-      }
-      case "redo": { //MARK: >> redo
-
-        break
-      }
-      case "clear": { //MARK: >> clear
-        window.location.reload()
-        break
-      }
-      case "success": { //MARK: >> success
-        const success_packet = packetStack[packet.data.packet_id]
-        if (!success_packet) break
-
-        switch (success_packet.operation) {
-          case "delete": {
-            const target = document.getElementById(success_packet.data.target)
-            if (target) target.remove()
-            break
-          }
-          case "clear": {
-            window.location.reload()
-          }
-        }
-
-        delete packetStack[packet.data.packet_id]
-        break
-      }
-      case "error": { //MARK: >> error
-        const error_packet = packetStack[packet.data.packet_id]
-        if (!error_packet) break
-
-        switch (error_packet.operation) {
-          case "mouse": {
-            break
-          }
-          case "create": {
-            const target = document.getElementById(error_packet.data.element_id)
-            if (target) target.remove()
-            break
-          }
-          case "delete": {
-            break
-          }
-          case "undo": {
-            break
-          }
-          case "redo": {
-            break
-          }
-          case "clear": {
-            break
-          }
-        }
-        break
-      }
-    }
-  })
-
-  //MARK: > error
-  /** @param {Event|ErrorEvent} event*/
-  ws.addEventListener("error", (event) => {
-    console.log(JSON.stringify({ "event": "websocket", "callback": "error" }), event)
-  })
-
-  //MARK: > close
-  /** @param {CloseEvent} event*/
-  ws.addEventListener("close", (event) => {
-    console.log(JSON.stringify({ "event": "websocket", "callback": "close" }), event)
-
-    clearInterval(heatbeatId)
-  })
+  // @ts-expect-error
+  heatbeatId = setInterval(() => {
+    sendPacket({
+      packet_id: new Date().getTime().toString(),
+      name: username,
+      operation: "heatbeat",
+      data: {}
+    })
+  }, 5000)
 }
+
+// MARK: WebsocketMessage()
+/**
+ * @param {MessageEvent} event
+ */
+function WebsocketMessage(event) {
+  console.log(JSON.stringify({ "event": "websocket", "callback": "message" }), event)
+
+
+  //   c<=>s :"mouse"|"create"|"delete"|"undo"|"redo"|"clear"
+  //   s=>c :"success"|"error"
+  /** @type {PacketEvent} */
+  const packet = JSON.parse(event.data)
+  switch (packet.operation) {
+    case "mouse": { //MARK: >> mouse
+      break
+    }
+    case "create": { //MARK: >> create
+      createElement(packet.data)
+      break
+    }
+    case "delete": { //MARK: >> delete
+      const target = document.getElementById(packet.data.target)
+      if (target) target.remove()
+      break
+    }
+    case "undo": { //MARK: >> undo
+
+      break
+    }
+    case "redo": { //MARK: >> redo
+
+      break
+    }
+    case "clear": { //MARK: >> clear
+      window.location.reload()
+      break
+    }
+    case "success": { //MARK: >> success
+      const success_packet = packetStack[packet.data.packet_id]
+      if (!success_packet) break
+
+      switch (success_packet.operation) {
+        case "delete": {
+          const target = document.getElementById(success_packet.data.target)
+          if (target) target.remove()
+          break
+        }
+        case "clear": {
+          window.location.reload()
+        }
+      }
+
+      delete packetStack[packet.data.packet_id]
+      break
+    }
+    case "error": { //MARK: >> error
+      const error_packet = packetStack[packet.data.packet_id]
+      if (!error_packet) break
+
+      switch (error_packet.operation) {
+        case "mouse": {
+          break
+        }
+        case "create": {
+          const target = document.getElementById(error_packet.data.element_id)
+          if (target) target.remove()
+          break
+        }
+        case "delete": {
+          break
+        }
+        case "undo": {
+          break
+        }
+        case "redo": {
+          break
+        }
+        case "clear": {
+          break
+        }
+      }
+      break
+    }
+  }
+}
+
+// MARK: WebsocketError()
+/**
+ * @param {Event|ErrorEvent} event
+ */
+function WebSocketError(event) {
+  console.log(JSON.stringify({ "event": "websocket", "callback": "error" }), event)
+}
+
+// MARK: WebsocketClose()
+/**
+* @param {CloseEvent} event
+*/
+function WebsocketClose(event) {
+  console.log(JSON.stringify({ "event": "websocket", "callback": "close" }), event)
+
+  clearInterval(transaction.heartbeatId)
+  if (transaction.ws) {
+    transaction.ws.removeEventListener("open", WebsocketOpen)
+    transaction.ws.removeEventListener("message", WebsocketMessage)
+    transaction.ws.removeEventListener("error", WebSocketError)
+    transaction.ws.removeEventListener("close", WebsocketClose)
+    transaction.ws = null
+
+    if (new Date().getTime() - transaction.startTime < 1000 * 10) {
+      transaction.retry++
+    }
+    if (transaction.retry < 5) {
+      NewWebsocket()
+    } else {
+      window.location.href = "/"
+    }
+  }
+}
+
+/**
+ * @param {string} text
+ */
+function sendMessage(text) {
+  if (!transaction.ws) return
+  transaction.ws.send(text)
+}
+
+/**
+ * @param {PacketEvent} packet
+ */
+function sendPacket(packet) {
+  sendMessage(JSON.stringify(packet))
+}
+
 
 // MARK: createElement()
 /**
@@ -681,17 +742,3 @@ function fixedString(n) {
   return n.toFixed(2)
 }
 
-/**
- * @param {string} text
- */
-function sendMessage(text) {
-  if (!ws) return
-  ws.send(text)
-}
-
-/**
- * @param {PacketEvent} packet
- */
-function sendPacket(packet) {
-  sendMessage(JSON.stringify(packet))
-}

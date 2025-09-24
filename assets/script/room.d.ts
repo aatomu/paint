@@ -1,6 +1,8 @@
 type BoardConfigration = {
+  // UI
   scale: number;
   offset: [number, number];
+  // tool
   color: string;
   opacity: number;
   bold: number;
@@ -12,6 +14,14 @@ type PointerConfiguration = {
   isDown: boolean;
   prev: [number, number];
   notify: number;
+};
+
+type TransactionConfigration = {
+  requestHistory: boolean;
+  ws: WebSocket | null;
+  heartbeatId: number;
+  startTime: number;
+  retry: number;
 };
 
 // MARK: Packet
