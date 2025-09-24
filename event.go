@@ -253,7 +253,7 @@ func (p PacketEvent) UndoEvent(room, boardId string) (se FunctionResult) {
 			),
 		)
 	case "delete": // MARK: >> delete
-		fr = tx.UpdateElementDeleted(boardId, elementId, true)
+		fr = tx.UpdateElementDeleted(boardId, elementId, false)
 		if !fr.Ok() {
 			return fr
 		}
@@ -324,7 +324,7 @@ func (p PacketEvent) RedoEvent(room, boardId string) (se FunctionResult) {
 
 	switch operation {
 	case "create": // MARK: >> create
-		fr = tx.UpdateElementDeleted(boardId, elementId, true)
+		fr = tx.UpdateElementDeleted(boardId, elementId, false)
 		if !fr.Ok() {
 			return fr
 		}
