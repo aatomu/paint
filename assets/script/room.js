@@ -696,7 +696,7 @@ function createElement(element) {
       stamp.setAttribute("x", fixedString(element.property.pos[0]))
       stamp.setAttribute("y", fixedString(element.property.pos[1]))
       stamp.setAttribute("text-anchor", "middle")
-      const fontSize = element.bold * 2
+      const fontSize = element.bold * 4
       stamp.setAttribute("style", `font-size: ${fontSize}px; fill: ${element.color}; opacity: ${element.opacity};`)
       const stampLines = JSON.parse(element.property.text)
       for (let i = 0; i < stampLines.length; i++) {
