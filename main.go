@@ -145,7 +145,6 @@ func WebsocketRequest(w *websocket.Conn) {
 			logger.Error("new message", "IP", source, "ID", connId, "packet", packet, "message", err)
 			return
 		}
-		logger.Debug("new message", "IP", source, "ID", connId, "packet", packet)
 
 		eventId := uuid.New().String()
 
@@ -155,7 +154,7 @@ func WebsocketRequest(w *websocket.Conn) {
 		if err != nil {
 			// ! Invalid Event
 			websocket.JSON.Send(w, event.Error("PacketEvent marshal error."))
-			logger.Debug("PacketEvent marshal error", "ID", connId, "message", event)
+			logger.Error("PacketEvent marshal error", "ID", connId, "packet", packet, "message", err)
 			continue
 		}
 
@@ -177,7 +176,7 @@ func WebsocketRequest(w *websocket.Conn) {
 			result := event.HistoryEvent(boardId, w)
 			if !result.Ok() {
 				websocket.JSON.Send(w, event.Error(result.msg.client))
-				logger.Debug(result.msg.server, "ID", connId, "message", result.err)
+				logger.Error(result.msg.server, "ID", connId, "packet", packet, "message", result.err)
 				continue
 			}
 
@@ -186,7 +185,7 @@ func WebsocketRequest(w *websocket.Conn) {
 			if err != nil {
 				// ! Invalid Event Property
 				websocket.JSON.Send(w, event.Error("PacketEventMouse marshal error."))
-				logger.Debug("PacketEventMouse marshal error", "ID", connId, "message", event)
+				logger.Error("PacketEventMouse marshal error", "ID", connId, "packet", packet, "message", event)
 				continue
 			}
 
@@ -194,7 +193,7 @@ func WebsocketRequest(w *websocket.Conn) {
 			result := event.CreateEvent(dataDecoder, eventId, boardId)
 			if !result.Ok() {
 				websocket.JSON.Send(w, event.Error(result.msg.client))
-				logger.Debug(result.msg.server, "ID", connId, "message", result.err)
+				logger.Error(result.msg.server, "ID", connId, "packet", packet, "message", result.err)
 				continue
 			}
 
@@ -202,7 +201,7 @@ func WebsocketRequest(w *websocket.Conn) {
 			result := event.DeleteEvent(dataDecoder, eventId, boardId)
 			if !result.Ok() {
 				websocket.JSON.Send(w, event.Error(result.msg.client))
-				logger.Debug(result.msg.server, "ID", connId, "message", result.err)
+				logger.Error(result.msg.server, "ID", connId, "packet", packet, "message", result.err)
 				continue
 			}
 
@@ -210,7 +209,7 @@ func WebsocketRequest(w *websocket.Conn) {
 			result := event.UndoEvent(room, boardId)
 			if !result.Ok() {
 				websocket.JSON.Send(w, event.Error(result.msg.client))
-				logger.Debug(result.msg.server, "ID", connId, "message", result.err)
+				logger.Error(result.msg.server, "ID", connId, "packet", packet, "message", result.err)
 				continue
 			}
 
@@ -218,7 +217,7 @@ func WebsocketRequest(w *websocket.Conn) {
 			result := event.RedoEvent(room, boardId)
 			if !result.Ok() {
 				websocket.JSON.Send(w, event.Error(result.msg.client))
-				logger.Debug(result.msg.server, "ID", connId, "message", result.err)
+				logger.Error(result.msg.server, "ID", connId, "packet", packet, "message", result.err)
 				continue
 			}
 
@@ -226,7 +225,7 @@ func WebsocketRequest(w *websocket.Conn) {
 			result := event.ClearEvent(boardId)
 			if !result.Ok() {
 				websocket.JSON.Send(w, event.Error(result.msg.client))
-				logger.Debug(result.msg.server, "ID", connId, "message", result.err)
+				logger.Error(result.msg.server, "ID", connId, "packet", packet, "message", result.err)
 				continue
 			}
 
@@ -242,11 +241,14 @@ func WebsocketRequest(w *websocket.Conn) {
 						PacketId: event.PacketId,
 						Message:  "Unknown packet error",
 					}))
-			logger.Debug("PacketEvent.Operation unknown", "ID", connId, "message", event)
+			logger.Warn("PacketEvent.Operation unknown", "ID", connId, "packet", packet, "message", event)
 			continue
 		}
 
 		// Send success
+		if !(event.Operation == "heatbeat" || event.Operation == "mouse") {
+			logger.Debug("success event", "IP", source, "ID", connId, "packet", packet)
+		}
 		websocket.JSON.Send(w,
 			PacketEvent{
 				PacketId:  "notify",
