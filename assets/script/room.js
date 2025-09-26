@@ -407,6 +407,7 @@ function updateColor(value) {
 // MARK: #opacity
 opacityRange.addEventListener("input", () => {
   opacityValue.textContent = opacityRange.value.padStart(3, "0") + "%"
+  opacityValue.style.opacity = opacityRange.value.padStart(3, "0") + "%"
   boardConfig.opacity = parseFloat(opacityRange.value) / 100
 })
 
