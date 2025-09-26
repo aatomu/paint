@@ -188,6 +188,14 @@ body {
   background-color: black;
 }
 
+.side-menu .bold-input {
+  background: none;
+
+  border-width: 0 0 2px 0;
+
+  text-align: right;
+}
+
 .side-menu-area .clear-input {
   padding: 0;
 
