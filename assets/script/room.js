@@ -33,7 +33,13 @@ const undoInput = document.getElementById("undo-input")
 const redoInput = document.getElementById("redo-input")
 /** @type HTMLInputElement */
 //@ts-expect-error
+const zoomIn = document.getElementById("zoom-in")
+/** @type HTMLInputElement */
+//@ts-expect-error
 const clearInput = document.getElementById("clear-input")
+/** @type HTMLInputElement */
+//@ts-expect-error
+const zoomOut = document.getElementById("zoom-out")
 
 // MARK: Vars
 /** @type {BoardConfigration} */
@@ -85,23 +91,42 @@ let packetStack = {
 
 // MARK: Zoom in/out
 window.addEventListener("wheel", (event) => {
-  const prevScale = boardConfig.scale
   if (event.deltaY < 0) {
+    zoom(true, [event.clientX, event.clientY])
+  } else {
+    zoom(false, [event.clientX, event.clientY])
+  }
+})
+
+zoomIn.addEventListener("click", () => {
+  zoom(true, [window.innerWidth / 2, window.innerHeight / 2])
+})
+zoomOut.addEventListener("click", () => {
+  zoom(false, [window.innerWidth / 2, window.innerHeight / 2])
+})
+
+/**
+ * @param {boolean} zoomIn
+ * @param {[number,number]} center 
+ */
+function zoom(zoomIn, center) {
+  const prevScale = boardConfig.scale
+  if (zoomIn) {
     boardConfig.scale += 0.05
-    console.log(JSON.stringify({ "event": "scroll", "callback": "zoom-in" }))
+    console.log(JSON.stringify({ "event": "zoom()", "callback": "zoom-in" }))
   } else {
     boardConfig.scale -= 0.05
-    console.log(JSON.stringify({ "event": "scroll", "callback": "zoom-out" }))
+    console.log(JSON.stringify({ "event": "zoom()", "callback": "zoom-out" }))
   }
   boardConfig.scale = Math.max(boardConfig.scale, 0.05)
   boardConfig.scale = Math.min(boardConfig.scale, 30)
 
   const scaleRatio = boardConfig.scale / prevScale
-  boardConfig.offset[0] = event.clientX - ((event.clientX - boardConfig.offset[0]) * scaleRatio);
-  boardConfig.offset[1] = event.clientY - ((event.clientY - boardConfig.offset[1]) * scaleRatio);
+  boardConfig.offset[0] = center[0] - ((center[0] - boardConfig.offset[0]) * scaleRatio);
+  boardConfig.offset[1] = center[1] - ((center[1] - boardConfig.offset[1]) * scaleRatio);
 
   updateBoard()
-})
+}
 
 // MARK: pointerEvent
 window.addEventListener("mousemove", pointerEvent)
