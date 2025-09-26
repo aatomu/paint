@@ -129,7 +129,7 @@ body {
   line-height: 0;
   resize: none;
   overflow: none;
-  transition: height 1s ease-in-out 0s;
+  transition: height 0.25s ease-in-out 0s;
 }
 
 .side-menu-area:has(input:checked) .stamp-input {
@@ -192,7 +192,7 @@ body {
   line-height: 0;
   resize: none;
   overflow: none;
-  transition: height 1s ease-in-out 0s;
+  transition: height 0.25s ease-in-out 0s;
 }
 
 .side-menu-area:has(input:checked) .clear-input {
