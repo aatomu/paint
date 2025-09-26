@@ -1,12 +1,18 @@
 @import url('https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap');
 
+:root {
+  --index-board: -3;
+  --index-zoom: -2;
+  --index-sidemenu: -1;
+}
+
 body {
-  z-index: -2;
   position: relative;
   user-select: none;
 }
 
 .side-menu {
+  z-index: var(--index-sidemenu);
   position: absolute;
   top: 2ch;
   left: 2ch;
@@ -93,7 +99,8 @@ body {
   background-color: var(--button-select);
 }
 
-.side-menu-area input[type=radio], .side-menu-area input[type=button] {
+.side-menu-area input[type=radio],
+.side-menu-area input[type=button] {
   display: none;
 }
 
@@ -200,7 +207,9 @@ body {
   line-height: 1lh;
   height: 1lh;
 }
+
 .zoom {
+  z-index: var(--index-zoom);
   position: absolute;
   bottom: 2ch;
   left: 2ch;
@@ -211,7 +220,7 @@ body {
 }
 
 .board {
-  z-index: -1;
+  z-index: var(--index-board);
   position: absolute;
   transform-origin: 0 0;
 
