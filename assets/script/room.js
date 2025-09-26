@@ -57,7 +57,8 @@ const pointer = {
   isDownPrev: false,
   isDown: false,
   prev: [0, 0],
-  notify: 0
+  notify: 0,
+  current: null
 }
 
 /** @type {TransactionConfigration} */
@@ -70,14 +71,6 @@ const transaction = {
 }
 
 const username = getCookie("name") ?? ""
-
-/** @type {PacketEvent} */
-let packet = {
-  packet_id: "",
-  name: "",
-  operation: "",
-  data: null,
-}
 
 /** @type {{[packet_id: string]:PacketEvent}} */
 let packetStack = {
@@ -208,65 +201,50 @@ function pointerDown(event) {
       break
     }
     case "pen": { //MARK: >> pen
-      packet = {
-        packet_id: UUIDv7(),
-        name: username,
-        operation: "create",
-        data: {
-          element_id: new Date().getTime().toString(),
-          bold: boardConfig.bold,
-          color: boardConfig.color,
-          opacity: boardConfig.opacity,
-          element_type: "pen",
-          property: {
-            d: `M${fixedString(pos[0])},${fixedString(pos[1])}`
-          }
+      pointer.current = {
+        element_id: new Date().getTime().toString(),
+        bold: boardConfig.bold,
+        color: boardConfig.color,
+        opacity: boardConfig.opacity,
+        element_type: "pen",
+        property: {
+          d: `M${fixedString(pos[0])},${fixedString(pos[1])}`
         }
       }
-      createElement(packet.data)
+      createElement(pointer.current)
       break
     }
     case "line": { //MARK: >> line
-      packet = {
-        packet_id: UUIDv7(),
-        name: username,
-        operation: "create",
-        data: {
-          element_id: new Date().getTime().toString(),
-          bold: boardConfig.bold,
-          color: boardConfig.color,
-          opacity: boardConfig.opacity,
-          element_type: "line",
-          property: {
-            start: [fixedNumber(pos[0]), fixedNumber(pos[1])],
-            end: [fixedNumber(pos[0]), fixedNumber(pos[1])],
-          }
+      pointer.current = {
+        element_id: new Date().getTime().toString(),
+        bold: boardConfig.bold,
+        color: boardConfig.color,
+        opacity: boardConfig.opacity,
+        element_type: "line",
+        property: {
+          start: [fixedNumber(pos[0]), fixedNumber(pos[1])],
+          end: [fixedNumber(pos[0]), fixedNumber(pos[1])],
         }
       }
-      createElement(packet.data)
+      createElement(pointer.current)
       break
     }
     case "stamp": { //MARK: >> stamp
       if (stampInput.value.length === 0) break
       const stampLines = stampInput.value.split("\n")
 
-      packet = {
-        packet_id: UUIDv7(),
-        name: username,
-        operation: "create",
-        data: {
-          element_id: new Date().getTime().toString(),
-          bold: boardConfig.bold,
-          color: boardConfig.color,
-          opacity: boardConfig.opacity,
-          element_type: "stamp",
-          property: {
-            pos: [fixedNumber(pos[0]), fixedNumber(pos[1])],
-            text: JSON.stringify(stampLines)
-          }
+      pointer.current = {
+        element_id: new Date().getTime().toString(),
+        bold: boardConfig.bold,
+        color: boardConfig.color,
+        opacity: boardConfig.opacity,
+        element_type: "stamp",
+        property: {
+          pos: [fixedNumber(pos[0]), fixedNumber(pos[1])],
+          text: JSON.stringify(stampLines)
         }
       }
-      createElement(packet.data)
+      createElement(pointer.current)
       break
     }
     case "delete": { //MARK: >> delete
@@ -295,35 +273,35 @@ function pointerMove(event) {
       break
     }
     case "pen": { //MARK: >> pen
-      if (packet.operation != "create") return
-      if (packet.data.element_type != "pen") return
-      const pen = document.getElementById(packet.data.element_id)
+      if (!pointer.current) return
+      if (pointer.current.element_type != "pen") return
+      const pen = document.getElementById(pointer.current.element_id)
       if (!pen) return
 
-      packet.data.property.d += `L${fixedString(position[0] / boardConfig.scale)},${fixedString(position[1] / boardConfig.scale)}`
-      pen.setAttribute("d", packet.data.property.d)
+      pointer.current.property.d += `L${fixedString(position[0] / boardConfig.scale)},${fixedString(position[1] / boardConfig.scale)}`
+      pen.setAttribute("d", pointer.current.property.d)
       break
     }
     case "line": { //MARK: >> line
-      if (packet.operation != "create") return
-      if (packet.data.element_type != "line") return
-      const line = document.getElementById(packet.data.element_id)
+      if (!pointer.current) return
+      if (pointer.current.element_type != "line") return
+      const line = document.getElementById(pointer.current.element_id)
       if (!line) return
 
       const pos = [position[0] / boardConfig.scale, position[1] / boardConfig.scale]
-      packet.data.property.end = [fixedNumber(pos[0]), fixedNumber(pos[1])]
+      pointer.current.property.end = [fixedNumber(pos[0]), fixedNumber(pos[1])]
       line.setAttribute("x2", fixedString(pos[0]))
       line.setAttribute("y2", fixedString(pos[1]))
       break
     }
     case "stamp": { //MARK: >> stamp
-      if (packet.operation != "create") return
-      if (packet.data.element_type != "stamp") return
-      const stamp = document.getElementById(packet.data.element_id)
+      if (!pointer.current) return
+      if (pointer.current.element_type != "stamp") return
+      const stamp = document.getElementById(pointer.current.element_id)
       if (!stamp) return
 
       const pos = [position[0] / boardConfig.scale, position[1] / boardConfig.scale]
-      packet.data.property.pos = [fixedNumber(pos[0]), fixedNumber(pos[1])]
+      pointer.current.property.pos = [fixedNumber(pos[0]), fixedNumber(pos[1])]
       stamp.setAttribute("x", fixedString(pos[0]))
       stamp.setAttribute("y", fixedString(pos[1]))
       for (let i = 0; i < stamp.children.length; i++) {
@@ -341,7 +319,8 @@ function pointerMove(event) {
       if (target.localName === "tspan" && target.parentElement) target = target.parentElement
 
       target.style.display = "none"
-      packet = {
+      /** @type {PacketEvent} */
+      const packet = {
         packet_id: UUIDv7(),
         name: username,
         operation: "delete",
@@ -364,7 +343,15 @@ function pointerMove(event) {
 function pointerUp(event) {
   pointer.isDown = false
 
-  if (packet.operation == "create") {
+  if (pointer.current) {
+    /** @type {PacketEvent} */
+    const packet = {
+      packet_id: UUIDv7(),
+      name: username,
+      operation: "create",
+      data: pointer.current
+    }
+    pointer.current = null
     sendPacket(packet)
     packetStack[packet.packet_id] = packet
   }
@@ -464,7 +451,8 @@ redoInput.addEventListener("click", () => {
 // MARK: #clear
 clearInput.addEventListener("input", () => {
   if (clearInput.value === "clear board") {
-    packet = {
+    /** @type {PacketEvent} */
+    const packet = {
       packet_id: UUIDv7(),
       name: username,
       operation: "clear",

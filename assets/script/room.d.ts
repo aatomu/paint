@@ -14,6 +14,7 @@ type PointerConfiguration = {
   isDown: boolean;
   prev: [number, number];
   notify: number;
+  current: PacketEventCreate | null;
 };
 
 type TransactionConfigration = {
