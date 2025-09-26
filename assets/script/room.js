@@ -91,6 +91,9 @@ let packetStack = {
 
 // MARK: Zoom in/out
 window.addEventListener("wheel", (event) => {
+  if (isSidemenuArea([event.clientX, event.clientY])) {
+    return
+  }
   if (event.deltaY < 0) {
     zoom(true, [event.clientX, event.clientY])
   } else {
@@ -192,17 +195,7 @@ function pointerDown(event) {
   // @ts-expect-error
   pointer.mode = document.querySelector("input[name=tool]:checked").value
 
-  /** @type {SVGElement[]|HTMLElement[]} */
-  // @ts-expect-error
-  const targetElements = document.elementsFromPoint(event.clientX, event.clientY)
-  let isBypass = false
-  for (let i = 0; i < targetElements.length; i++) {
-    if (targetElements[i].classList.contains("side-menu") || targetElements[i].classList.contains("side-menu-area")) {
-      isBypass = true
-      break
-    }
-  }
-  if (isBypass) {
+  if (isSidemenuArea([event.clientX, event.clientY])) {
     pointer.isDown = false
     console.log("cancel by .side-menu")
     return
@@ -761,3 +754,19 @@ function fixedString(n) {
   return n.toFixed(2)
 }
 
+
+/**
+ * 
+ * @param {[number,number]} pos 
+ */
+function isSidemenuArea(pos) {
+  /** @type {SVGElement[]|HTMLElement[]} */
+  // @ts-expect-error
+  const targetElements = document.elementsFromPoint(pos[0], pos[1])
+
+  for (let i = 0; i < targetElements.length; i++) {
+    if (targetElements[i].classList.contains("side-menu") || targetElements[i].classList.contains("side-menu-area")) {
+      return true
+    }
+  }
+}
