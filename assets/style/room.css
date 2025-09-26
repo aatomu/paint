@@ -1,9 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap');
 
 :root {
-  --index-board: -3;
-  --index-zoom: -2;
-  --index-sidemenu: -1;
+  --index-board: 1;
+  --index-zoom: 2;
+  --index-sidemenu: 3;
 }
 
 body {
