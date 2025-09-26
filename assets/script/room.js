@@ -405,7 +405,7 @@ document.querySelectorAll("div.bold-template").forEach((element) => {
   if (!preview) return
   const bold = preview.dataset.bold
   if (!bold) return
-  preview.style.height = bold + "px"
+  preview.style.height = `${bold}px`
   element.addEventListener("click", () => {
     updateBold(bold)
   })
@@ -473,7 +473,6 @@ if (document.readyState == "complete") {
 
 function Initialize() {
   updateBoard()
-  updateColor("#000000")
   updateColor("#000000")
   updateBold("15")
 
