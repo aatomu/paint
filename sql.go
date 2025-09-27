@@ -12,9 +12,9 @@ import (
 func CreateTables(db *sql.DB) error {
 	_, err := db.Exec(`
 	CREATE TABLE IF NOT EXISTS boards (
-		board_id               TEXT    PRIMARY KEY,
-		name             TEXT    NOT NULL,
-		created_at INTEGER NOT NULL
+		board_id          TEXT     PRIMARY KEY,
+		name              TEXT     NOT NULL,
+		created_at        INTEGER  NOT NULL
 	)`)
 	if err != nil {
 		return fmt.Errorf("%s(in boards)", err.Error())
@@ -22,14 +22,14 @@ func CreateTables(db *sql.DB) error {
 
 	_, err = db.Exec(`
 	CREATE TABLE IF NOT EXISTS elements (
-		element_id        TEXT    NOT NULL,
-		board_id          TEXT    NOT NULL,
-		element_type      TEXT    NOT NULL,
-		bold              REAL    NOT NULL,
-		color             TEXT    NOT NULL,
-		opacity           REAL    NOT NULL,
-		property          TEXT    NOT NULL,
-		deleted           INTEGER NOT NULL,
+		element_id        TEXT     NOT NULL,
+		board_id          TEXT     NOT NULL,
+		element_type      TEXT     NOT NULL,
+		bold              REAL     NOT NULL,
+		color             TEXT     NOT NULL,
+		opacity           REAL     NOT NULL,
+		property          TEXT     NOT NULL,
+		deleted           INTEGER  NOT NULL,
 		PRIMARY KEY (element_id,board_id),
 		FOREIGN KEY(board_id) REFERENCES boards(board_id)
 	)`)
@@ -39,15 +39,15 @@ func CreateTables(db *sql.DB) error {
 
 	_, err = db.Exec(`
 	CREATE TABLE IF NOT EXISTS events (
-		id      INTEGER PRIMARY KEY AUTOINCREMENT,
-		event_id   TEXT    NOT NULL UNIQUE,
-		board_id   TEXT    NOT NULL,
-		element_id TEXT,
-		username   TEXT    NOT NULL,
-		operation  TEXT    NOT NULL,
-		undo       INTEGER NOT NULL,
-		disable    INTEGER NOT NULL,
-		created_at  INTEGER NOT NULL,
+		id                INTEGER  PRIMARY KEY AUTOINCREMENT,
+		event_id          TEXT     NOT NULL UNIQUE,
+		board_id          TEXT     NOT NULL,
+		element_id        TEXT,
+		username          TEXT     NOT NULL,
+		operation         TEXT     NOT NULL,
+		undo              INTEGER  NOT NULL,
+		disable           INTEGER  NOT NULL,
+		created_at        INTEGER  NOT NULL,
 		FOREIGN KEY(board_id) REFERENCES boards(board_id),
 		FOREIGN KEY(element_id) REFERENCES elements(element_id)
 	)`)
