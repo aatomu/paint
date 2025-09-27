@@ -488,6 +488,8 @@ function NewWebsocket() {
   url.pathname = "/ws"
   transaction.ws = new WebSocket(url.href)
 
+  transaction.startTime = new Date().getTime()
+
   transaction.ws.addEventListener("open", WebsocketOpen)
   transaction.ws.addEventListener("message", WebsocketMessage)
   transaction.ws.addEventListener("error", WebSocketError)
@@ -501,8 +503,6 @@ function NewWebsocket() {
 function WebsocketOpen(event) {
   console.log(JSON.stringify({ "event": "websocket", "callback": "open" }), event)
 
-  transaction.startTime = new Date().getTime()
-
   if (transaction.requestHistory) {
     sendPacket({
       packet_id: new Date().getTime().toString(),
@@ -514,7 +514,7 @@ function WebsocketOpen(event) {
   }
 
   // @ts-expect-error
-  heatbeatId = setInterval(() => {
+  transaction.heartbeatId = setInterval(() => {
     sendPacket({
       packet_id: new Date().getTime().toString(),
       name: username,
@@ -641,7 +641,7 @@ function WebsocketClose(event) {
     transaction.ws = null
 
     if (new Date().getTime() - transaction.startTime < 1000 * 10) {
-      transaction.retry++
+      transaction.retry += 1
     }
     if (transaction.retry < 5) {
       NewWebsocket()
