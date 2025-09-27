@@ -202,7 +202,7 @@ function pointerDown(event) {
     }
     case "pen": { //MARK: >> pen
       pointer.current = {
-        element_id: new Date().getTime().toString(),
+        element_id: new Date().getTime(),
         bold: boardConfig.bold,
         color: boardConfig.color,
         opacity: boardConfig.opacity,
@@ -216,7 +216,7 @@ function pointerDown(event) {
     }
     case "line": { //MARK: >> line
       pointer.current = {
-        element_id: new Date().getTime().toString(),
+        element_id: new Date().getTime(),
         bold: boardConfig.bold,
         color: boardConfig.color,
         opacity: boardConfig.opacity,
@@ -234,7 +234,7 @@ function pointerDown(event) {
       const stampLines = stampInput.value.split("\n")
 
       pointer.current = {
-        element_id: new Date().getTime().toString(),
+        element_id: new Date().getTime(),
         bold: boardConfig.bold,
         color: boardConfig.color,
         opacity: boardConfig.opacity,
@@ -275,7 +275,7 @@ function pointerMove(event) {
     case "pen": { //MARK: >> pen
       if (!pointer.current) return
       if (pointer.current.element_type != "pen") return
-      const pen = document.getElementById(pointer.current.element_id)
+      const pen = document.getElementById(pointer.current.element_id.toString())
       if (!pen) return
 
       pointer.current.property.d += `L${fixedString(position[0] / boardConfig.scale)},${fixedString(position[1] / boardConfig.scale)}`
@@ -285,7 +285,7 @@ function pointerMove(event) {
     case "line": { //MARK: >> line
       if (!pointer.current) return
       if (pointer.current.element_type != "line") return
-      const line = document.getElementById(pointer.current.element_id)
+      const line = document.getElementById(pointer.current.element_id.toString())
       if (!line) return
 
       const pos = [position[0] / boardConfig.scale, position[1] / boardConfig.scale]
@@ -297,7 +297,7 @@ function pointerMove(event) {
     case "stamp": { //MARK: >> stamp
       if (!pointer.current) return
       if (pointer.current.element_type != "stamp") return
-      const stamp = document.getElementById(pointer.current.element_id)
+      const stamp = document.getElementById(pointer.current.element_id.toString())
       if (!stamp) return
 
       const pos = [position[0] / boardConfig.scale, position[1] / boardConfig.scale]
@@ -325,7 +325,7 @@ function pointerMove(event) {
         name: username,
         operation: "delete",
         data: {
-          target: target.id
+          target: parseInt(target.id)
         }
       }
       sendPacket(packet)
@@ -545,7 +545,7 @@ function WebsocketMessage(event) {
       break
     }
     case "delete": { //MARK: >> delete
-      const target = document.getElementById(receivePacket.data.target)
+      const target = document.getElementById(receivePacket.data.target.toString())
       if (target) target.remove()
       break
     }
@@ -566,8 +566,13 @@ function WebsocketMessage(event) {
       if (!success_packet) break
 
       switch (success_packet.operation) {
+        case "create": {
+          const target = document.getElementById(success_packet.data.element_id.toString())
+          if (target) target.remove()
+          break
+        }
         case "delete": {
-          const target = document.getElementById(success_packet.data.target)
+          const target = document.getElementById(success_packet.data.target.toString())
           if (target) target.remove()
           break
         }
@@ -588,12 +593,12 @@ function WebsocketMessage(event) {
           break
         }
         case "create": {
-          const target = document.getElementById(error_packet.data.element_id)
+          const target = document.getElementById(error_packet.data.element_id.toString())
           if (target) target.remove()
           break
         }
         case "delete": {
-          const target = document.getElementById(error_packet.data.target)
+          const target = document.getElementById(error_packet.data.target.toString())
           if (target) target.style.display = ""
           break
         }
@@ -670,7 +675,7 @@ function createElement(element) {
   switch (element.element_type) {
     case "pen": { // MARK: > pen
       const pen = document.createElementNS("http://www.w3.org/2000/svg", "path");
-      pen.id = element.element_id
+      pen.id = element.element_id.toString()
       pen.setAttribute("d", element.property.d)
       pen.setAttribute("style", `stroke-width: ${element.bold}px; stroke: ${element.color}; opacity: ${element.opacity};`)
       pen.setAttribute("stroke-linecap", "round")
@@ -680,7 +685,7 @@ function createElement(element) {
     }
     case "line": { // MARK: > line
       const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-      line.id = element.element_id
+      line.id = element.element_id.toString()
       line.setAttribute("x1", fixedString(element.property.start[0]))
       line.setAttribute("y1", fixedString(element.property.start[1]))
       line.setAttribute("x2", fixedString(element.property.end[0]))
@@ -692,7 +697,7 @@ function createElement(element) {
     }
     case "stamp": { // MARK: > stamp
       const stamp = document.createElementNS("http://www.w3.org/2000/svg", "text");
-      stamp.id = element.element_id
+      stamp.id = element.element_id.toString()
       stamp.setAttribute("x", fixedString(element.property.pos[0]))
       stamp.setAttribute("y", fixedString(element.property.pos[1]))
       stamp.setAttribute("text-anchor", "middle")
@@ -709,6 +714,24 @@ function createElement(element) {
       }
       board.appendChild(stamp)
     }
+  }
+}
+
+/**
+ * @param {HTMLElement|SVGAElement} element 
+ */
+function appendChild(element) {
+  const id = parseInt(element.id)
+  let inserted = false;
+  for (const child of board.children) {
+    if (parseInt(child.id) < id) {
+      board.insertBefore(element, child);
+      inserted = true;
+      break;
+    }
+  }
+  if (!inserted) {
+    board.appendChild(element);
   }
 }
 

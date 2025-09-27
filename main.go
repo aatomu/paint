@@ -190,12 +190,19 @@ func WebsocketRequest(w *websocket.Conn) {
 			}
 
 		case "create": // MARK: >>> Create
-			result := event.CreateEvent(dataDecoder, eventId, boardId)
+			c, result := event.CreateEvent(dataDecoder, eventId, boardId)
 			if !result.Ok() {
 				websocket.JSON.Send(w, event.Error(result.msg.client))
 				logger.Error(result.msg.server, "ID", connId, "packet", packet, "message", result.err)
 				continue
 			}
+			TransferAll(room, PacketEvent{
+				PacketId:  event.PacketId,
+				Name:      event.Name,
+				Operation: "create",
+			}.
+				Set(c),
+			)
 
 		case "delete": // MARK: >>> Delete
 			result := event.DeleteEvent(dataDecoder, eventId, boardId)
@@ -262,14 +269,16 @@ func WebsocketRequest(w *websocket.Conn) {
 
 		// MARK: >> Packet transfer
 		// Packet Transfer
-		Rooms[room].RLock()
-		for cId, v := range Rooms[room].Conn {
-			if cId == connId {
-				continue
+		if !(event.Operation == "histroy" || event.Operation == "create") {
+			Rooms[room].RLock()
+			for cId, v := range Rooms[room].Conn {
+				if cId == connId {
+					continue
+				}
+				websocket.Message.Send(v, packet)
 			}
-			websocket.Message.Send(v, packet)
+			Rooms[room].RUnlock()
 		}
-		Rooms[room].RUnlock()
 	}
 }
 

@@ -88,7 +88,7 @@ type PacketEventMouse = {
 };
 
 type PacketEventCreate = {
-  element_id: string;
+  element_id: number;
   bold: number;
   color: string;
   opacity: number;
@@ -108,7 +108,7 @@ type PacketEventCreate = {
 );
 
 type PacketEventDelete = {
-  target: string;
+  target: number;
 };
 type PacketEventUndo = {};
 

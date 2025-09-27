@@ -45,8 +45,8 @@ func (p PacketEvent) HistoryEvent(boardId string, w *websocket.Conn) (fr Functio
 	}
 
 	for rows.Next() {
-		var elementId, username, operation, elementType, color, property string
-		var created_at int64
+		var username, operation, elementType, color, property string
+		var elementId, created_at int64
 		var bold, opacity float64
 		err := rows.Scan(&elementId, &username, &operation, &created_at, &elementType, &bold, &color, &opacity, &property)
 		if err != nil {
@@ -89,101 +89,105 @@ func (p PacketEvent) HistoryEvent(boardId string, w *websocket.Conn) (fr Functio
 }
 
 // MARK: Create
-func (p PacketEvent) CreateEvent(d *json.Decoder, eventId, boardId string) (fr FunctionResult) {
-	var create PacketEventCreate
-	err := d.Decode(&create)
+func (p PacketEvent) CreateEvent(d *json.Decoder, eventId, boardId string) (c PacketEventCreate, fr FunctionResult) {
+	err := d.Decode(&c)
 	if err != nil {
-		return FunctionResult{
+		fr = FunctionResult{
 			err: err,
 			msg: FunctionMessage{
 				client: "Invalid PacketEventCreate",
 				server: "Invalid PacketEventCreate",
 			},
 		}
+		return
 	}
 
 	// MARK: > Property check
-	propertyDecoder := NewDecoder(bytes.NewReader(create.Property))
-	switch create.ElementType {
+	propertyDecoder := NewDecoder(bytes.NewReader(c.Property))
+	switch c.ElementType {
 	case "pen":
 		err = propertyDecoder.Decode(&PropertyPen{})
 		if err != nil {
-			return FunctionResult{
+			fr = FunctionResult{
 				err: err,
 				msg: FunctionMessage{
 					client: "Invalid PacketEventCreate<pen>.property",
 					server: "Invalid PacketEventCreate<pen>.property",
 				},
 			}
+			return
 		}
 	case "line":
 		err = propertyDecoder.Decode(&PropertyLine{})
 		if err != nil {
-			return FunctionResult{
+			fr = FunctionResult{
 				err: err,
 				msg: FunctionMessage{
 					client: "Invalid PacketEventCreate<line>.property",
 					server: "Invalid PacketEventCreate<line>.property",
 				},
 			}
+			return
 		}
 	case "stamp":
 		err = propertyDecoder.Decode(&PropertyStamp{})
 		if err != nil {
-			return FunctionResult{
+			fr = FunctionResult{
 				err: err,
 				msg: FunctionMessage{
 					client: "Invalid PacketEventCreate<stamp>.property",
 					server: "Invalid PacketEventCreate<stmap>.property",
 				},
 			}
+			return
 		}
 	default:
-		return FunctionResult{
-			err: fmt.Errorf("missing type: %s", create.ElementType),
+		fr = FunctionResult{
+			err: fmt.Errorf("missing type: %s", c.ElementType),
 			msg: FunctionMessage{
 				client: "Invalid PacketEventCreate<unknown>.property",
 				server: "Invalid PacketEventCreate<unknown>.property",
 			},
 		}
+		return
 	}
 
 	// MARK: > Write DB
 	tx, fr := NewTx()
 	if !fr.Ok() {
-		return fr
+		return c, fr
 	}
 	defer tx.transaction.Rollback()
+
+	c.ElementId, fr = tx.InsertElement(TableElements{
+		elementId:   c.ElementId,
+		boardId:     boardId,
+		elementType: c.ElementType,
+		bold:        c.Bold,
+		color:       c.Color,
+		opacity:     c.Opacity,
+		property:    string(c.Property),
+		deleted:     false,
+	})
+	if !fr.Ok() {
+		return c, fr
+	}
 
 	fr = tx.InsertEvent(TableEvents{
 		eventId:   eventId,
 		boardId:   boardId,
-		elementId: create.ElementId,
+		elementId: c.ElementId,
 		username:  p.Name,
 		operation: "create",
 		undo:      false,
 	})
 	if !fr.Ok() {
-		return fr
-	}
-
-	fr = tx.InsertElement(TableElements{
-		elementId:   create.ElementId,
-		boardId:     boardId,
-		elementType: create.ElementType,
-		bold:        create.Bold,
-		color:       create.Color,
-		opacity:     create.Opacity,
-		property:    string(create.Property),
-		deleted:     false,
-	})
-	if !fr.Ok() {
-		return fr
+		return c, fr
 	}
 
 	fr = tx.Commit()
 	if !fr.Ok() {
-		return fr
+		return c, fr
 	}
 
 	return
@@ -210,18 +214,6 @@ func (p PacketEvent) DeleteEvent(d *json.Decoder, eventId, boardId string) (se F
 	}
 	defer tx.transaction.Rollback()
 
-	fr = tx.InsertEvent(TableEvents{
-		eventId:   eventId,
-		boardId:   boardId,
-		elementId: delete.Target,
-		username:  p.Name,
-		operation: "delete",
-		undo:      false,
-	})
-	if !fr.Ok() {
-		return fr
-	}
-
 	result, fr := tx.SelectElement(boardId, delete.Target)
 	if !fr.Ok() {
 		return fr
@@ -238,6 +230,18 @@ func (p PacketEvent) DeleteEvent(d *json.Decoder, eventId, boardId string) (se F
 	}
 
 	fr = tx.UpdateElementDeleted(boardId, delete.Target, true)
+	if !fr.Ok() {
+		return fr
+	}
+
+	fr = tx.InsertEvent(TableEvents{
+		eventId:   eventId,
+		boardId:   boardId,
+		elementId: delete.Target,
+		username:  p.Name,
+		operation: "delete",
+		undo:      false,
+	})
 	if !fr.Ok() {
 		return fr
 	}
@@ -267,7 +271,8 @@ func (p PacketEvent) UndoEvent(room, boardId string) (se FunctionResult) {
 		LIMIT 1`,
 		boardId)
 
-	var eventId, elementId, operation string
+	var eventId, operation string
+	var elementId int64
 	err := qr.Scan(&eventId, &elementId, &operation)
 	if err != nil {
 		return FunctionResult{
@@ -360,7 +365,8 @@ func (p PacketEvent) RedoEvent(room, boardId string) (se FunctionResult) {
 		LIMIT 1`,
 		boardId)
 
-	var eventId, elementId, operation string
+	var eventId, operation string
+	var elementId int64
 	err := qr.Scan(&eventId, &elementId, &operation)
 	if err != nil {
 		return FunctionResult{

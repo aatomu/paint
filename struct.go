@@ -60,7 +60,7 @@ type PacketEventMouse struct {
 }
 
 type PacketEventCreate struct {
-	ElementId   string          `json:"element_id"`
+	ElementId   int64           `json:"element_id"`
 	ElementType string          `json:"element_type"` // "pen"|"line"|"stamp"
 	Bold        float64         `json:"bold"`
 	Color       string          `json:"color"`
@@ -69,7 +69,7 @@ type PacketEventCreate struct {
 }
 
 type PacketEventDelete struct {
-	Target string `json:"target"`
+	Target int64 `json:"target"`
 }
 
 type PacketEventUndo struct{}
@@ -95,7 +95,7 @@ type TableBoards struct {
 }
 
 type TableElements struct {
-	elementId   string
+	elementId   int64
 	boardId     string
 	elementType string
 	bold        float64
@@ -109,7 +109,7 @@ type TableEvents struct {
 	id         int64 // Result only
 	eventId    string
 	boardId    string
-	elementId  string
+	elementId  int64
 	username   string
 	operation  string
 	undo       bool

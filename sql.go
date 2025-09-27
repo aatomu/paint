@@ -22,7 +22,7 @@ func CreateTables(db *sql.DB) error {
 
 	_, err = db.Exec(`
 	CREATE TABLE IF NOT EXISTS elements (
-		element_id        TEXT     NOT NULL,
+		element_id        INTEGER     NOT NULL,
 		board_id          TEXT     NOT NULL,
 		element_type      TEXT     NOT NULL,
 		bold              REAL     NOT NULL,
@@ -184,19 +184,21 @@ func (tx *Transaction) UpdateEventUndo(eventId string, flag bool) (fr FunctionRe
 }
 
 // MARK: > InsertElement
-func (tx *Transaction) InsertElement(e TableElements) (fr FunctionResult) {
+func (tx *Transaction) InsertElement(e TableElements) (id int64, fr FunctionResult) {
 	deletedValue := 0
 	if e.deleted {
 		deletedValue = 1
 	}
 
+	id = time.Now().UnixMilli()
+
 	_, err := tx.transaction.Exec(`
 		INSERT INTO elements 
 			(element_id, board_id, element_type, bold, color, opacity, property, deleted)
 			VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-		e.elementId, e.boardId, e.elementType, e.bold, e.color, e.opacity, e.property, deletedValue)
+		id, e.boardId, e.elementType, e.bold, e.color, e.opacity, e.property, deletedValue)
 	if err != nil {
-		return FunctionResult{
+		return 0, FunctionResult{
 			err: err,
 			msg: FunctionMessage{
 				client: "Failed save element",
@@ -209,7 +211,7 @@ func (tx *Transaction) InsertElement(e TableElements) (fr FunctionResult) {
 }
 
 // MARK: > SelectElement
-func (tx *Transaction) SelectElement(boardId, elementId string) (e TableElements, fr FunctionResult) {
+func (tx *Transaction) SelectElement(boardId string, elementId int64) (e TableElements, fr FunctionResult) {
 	qr := tx.transaction.QueryRow(`
 	SELECT element_id, board_id, element_type, bold, color, opacity, property, deleted
 		FROM elements 
@@ -232,7 +234,7 @@ func (tx *Transaction) SelectElement(boardId, elementId string) (e TableElements
 	return
 }
 
-func (tx *Transaction) UpdateElementDeleted(boardId, elementId string, flag bool) (fr FunctionResult) {
+func (tx *Transaction) UpdateElementDeleted(boardId string, elementId int64, flag bool) (fr FunctionResult) {
 	flagValue := 0
 	if flag {
 		flagValue = 1
