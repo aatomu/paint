@@ -164,7 +164,7 @@ func WebsocketRequest(w *websocket.Conn) {
 			websocket.JSON.Send(w,
 				PacketEvent{
 					PacketId:  "notify",
-					Name:      "server",
+					User:      "server",
 					Operation: "success",
 				}.Set(
 					PacketEventSuccess{
@@ -198,7 +198,7 @@ func WebsocketRequest(w *websocket.Conn) {
 			}
 			TransferAll(room, PacketEvent{
 				PacketId:  event.PacketId,
-				Name:      event.Name,
+				User:      event.User,
 				Operation: "create",
 			}.
 				Set(c),
@@ -241,7 +241,7 @@ func WebsocketRequest(w *websocket.Conn) {
 			websocket.JSON.Send(w,
 				PacketEvent{
 					PacketId:  "notify",
-					Name:      "server",
+					User:      "server",
 					Operation: "error",
 				}.Set(
 					PacketEventError{
@@ -259,7 +259,7 @@ func WebsocketRequest(w *websocket.Conn) {
 		websocket.JSON.Send(w,
 			PacketEvent{
 				PacketId:  "notify",
-				Name:      "server",
+				User:      "server",
 				Operation: "success",
 			}.Set(
 				PacketEventSuccess{

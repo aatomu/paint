@@ -43,7 +43,7 @@ func CreateTables(db *sql.DB) error {
 		event_id          TEXT     NOT NULL UNIQUE,
 		board_id          TEXT     NOT NULL,
 		element_id        TEXT,
-		username          TEXT     NOT NULL,
+		user              TEXT     NOT NULL,
 		operation         TEXT     NOT NULL,
 		undo              INTEGER  NOT NULL,
 		disable           INTEGER  NOT NULL,
@@ -114,9 +114,9 @@ func (tx *Transaction) InsertEvent(e TableEvents) (fr FunctionResult) {
 
 	_, err := tx.transaction.Exec(`
 		INSERT INTO events 
-			(event_id, board_id, element_id, username, operation, undo, disable, created_at)
+			(event_id, board_id, element_id, user, operation, undo, disable, created_at)
 			VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-		e.eventId, e.boardId, e.elementId, e.username, e.operation, undoValue, 0, time.Now().UnixMilli())
+		e.eventId, e.boardId, e.elementId, e.user, e.operation, undoValue, 0, time.Now().UnixMilli())
 	if err != nil {
 		return FunctionResult{
 			err: err,

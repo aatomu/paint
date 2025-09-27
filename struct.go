@@ -48,7 +48,7 @@ type Room struct {
 // MARK: Packet
 type PacketEvent struct {
 	PacketId string `json:"packet_id"`
-	Name     string `json:"name"`
+	User     string `json:"user"`
 	// c<=>s :"mouse"|"create"|"delete"|"undo"|"redo"|"clear"
 	// s=>c :"success"|"error"
 	Operation string          `json:"operation"`
@@ -110,7 +110,7 @@ type TableEvents struct {
 	eventId    string
 	boardId    string
 	elementId  int64
-	username   string
+	user       string
 	operation  string
 	undo       bool
 	disable    bool  // Result only

@@ -12,7 +12,7 @@ import (
 func (p PacketEvent) Error(msg string) PacketEvent {
 	return PacketEvent{
 		PacketId:  "notify",
-		Name:      "server",
+		User:      "server",
 		Operation: "error",
 	}.Set(
 		PacketEventError{
@@ -24,9 +24,9 @@ func (p PacketEvent) Error(msg string) PacketEvent {
 // MARK; History
 func (p PacketEvent) HistoryEvent(boardId string, w *websocket.Conn) (fr FunctionResult) {
 	rows, err := DB.Query(`
-	SELECT h.element_id, h.username, h.operation, h.created_at, e.element_type, e.bold, e.color, e.opacity, e.property
+	SELECT h.element_id, h.user, h.operation, h.created_at, e.element_type, e.bold, e.color, e.opacity, e.property
 		FROM (
-			SELECT board_id, element_id, username, operation, created_at
+			SELECT board_id, element_id, user, operation, created_at
 			FROM events
 			WHERE undo = 0 AND disable = 0 AND board_id = ?
 			ORDER BY id ASC
@@ -45,10 +45,10 @@ func (p PacketEvent) HistoryEvent(boardId string, w *websocket.Conn) (fr Functio
 	}
 
 	for rows.Next() {
-		var username, operation, elementType, color, property string
+		var user, operation, elementType, color, property string
 		var elementId, created_at int64
 		var bold, opacity float64
-		err := rows.Scan(&elementId, &username, &operation, &created_at, &elementType, &bold, &color, &opacity, &property)
+		err := rows.Scan(&elementId, &user, &operation, &created_at, &elementType, &bold, &color, &opacity, &property)
 		if err != nil {
 			return FunctionResult{
 				err: err,
@@ -61,7 +61,7 @@ func (p PacketEvent) HistoryEvent(boardId string, w *websocket.Conn) (fr Functio
 
 		packet := PacketEvent{
 			PacketId:  fmt.Sprintf("%d", created_at),
-			Name:      username,
+			User:      user,
 			Operation: operation,
 		}
 		switch operation {
@@ -177,7 +177,7 @@ func (p PacketEvent) CreateEvent(d *json.Decoder, eventId, boardId string) (c Pa
 		eventId:   eventId,
 		boardId:   boardId,
 		elementId: c.ElementId,
-		username:  p.Name,
+		user:      p.User,
 		operation: "create",
 		undo:      false,
 	})
@@ -238,7 +238,7 @@ func (p PacketEvent) DeleteEvent(d *json.Decoder, eventId, boardId string) (se F
 		eventId:   eventId,
 		boardId:   boardId,
 		elementId: delete.Target,
-		username:  p.Name,
+		user:      p.User,
 		operation: "delete",
 		undo:      false,
 	})
@@ -266,10 +266,10 @@ func (p PacketEvent) UndoEvent(room, boardId string) (se FunctionResult) {
 	qr := tx.transaction.QueryRow(`
 	SELECT event_id, element_id, operation
 		FROM events 
-		WHERE board_id = ? AND undo = 0 AND disable = 0
+		WHERE board_id = ? AND user = ? AND undo = 0 AND disable = 0
 		ORDER BY id DESC 
 		LIMIT 1`,
-		boardId)
+		boardId, p.User)
 
 	var eventId, operation string
 	var elementId int64
@@ -304,7 +304,7 @@ func (p PacketEvent) UndoEvent(room, boardId string) (se FunctionResult) {
 		TransferAll(room,
 			PacketEvent{
 				PacketId:  "undo",
-				Name:      "server",
+				User:      "server",
 				Operation: "delete",
 			}.Set(
 				PacketEventDelete{
@@ -339,7 +339,7 @@ func (p PacketEvent) UndoEvent(room, boardId string) (se FunctionResult) {
 
 		TransferAll(room, PacketEvent{
 			PacketId:  "undo",
-			Name:      "server",
+			User:      "server",
 			Operation: "create",
 		}.Set(data),
 		)
@@ -360,10 +360,10 @@ func (p PacketEvent) RedoEvent(room, boardId string) (se FunctionResult) {
 	qr := tx.transaction.QueryRow(`
 	SELECT event_id, element_id, operation
 		FROM events 
-		WHERE board_id = ? AND undo = 1 AND disable = 0
+		WHERE board_id = ? AND user = ? AND undo = 1 AND disable = 0
 		ORDER BY id ASC 
 		LIMIT 1`,
-		boardId)
+		boardId, p.User)
 
 	var eventId, operation string
 	var elementId int64
@@ -411,7 +411,7 @@ func (p PacketEvent) RedoEvent(room, boardId string) (se FunctionResult) {
 
 		TransferAll(room, PacketEvent{
 			PacketId:  "undo",
-			Name:      "server",
+			User:      "server",
 			Operation: "create",
 		}.Set(data),
 		)
@@ -430,7 +430,7 @@ func (p PacketEvent) RedoEvent(room, boardId string) (se FunctionResult) {
 		TransferAll(room,
 			PacketEvent{
 				PacketId:  "undo",
-				Name:      "server",
+				User:      "server",
 				Operation: "delete",
 			}.Set(
 				PacketEventDelete{
