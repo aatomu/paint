@@ -13,18 +13,23 @@ const input_join = document.getElementById("input_join")
 
 input_join.addEventListener("click", () => {
   if (input_name.value !== "" && input_room.value !== "") {
-    document.cookie = `name=${input_name.value}`
+    setCookie("user", input_name.value)
     const url = new URL(window.location.href)
     url.pathname = "room"
     url.search = ""
     url.searchParams.append("id", input_room.value)
+    url.searchParams.append("user", input_name.value)
     window.location.href = url.toString()
   }
 })
 
 window.addEventListener("DOMContentLoaded", () => {
-  const name = getCookie("name")
+  const name = getCookie("user")
   if (name) {
     input_name.value = name
+  }
+  const room = getCookie("room")
+  if (room) {
+    input_room.value = room
   }
 })

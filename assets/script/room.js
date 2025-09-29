@@ -76,9 +76,9 @@ const transaction = {
   retry: 0,
 }
 
-const username = getCookie("name") ?? ""
 const url = new URL(window.location.href)
-const room = url.searchParams.get("id") ?? "unknown"
+const room = url.searchParams.get("id")
+const user = url.searchParams.get("user")
 
 /** @type {{[packet_id: string]:PacketEvent}} */
 let packetStack = {
@@ -480,6 +480,12 @@ if (document.readyState == "complete") {
 }
 
 function Initialize() {
+  if (!room || !user) {
+    if (room) setCookie("room", room)
+    if (user) setCookie("user", user)
+    window.location.href = "/"
+  }
+
   updateBoard()
   updateColor("#000000")
   updateBold("15")

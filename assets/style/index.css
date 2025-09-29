@@ -47,7 +47,7 @@ body {
 }
 
 /* ボタンのスタイル */
-.popup button {
+.popup input[type=button] {
   padding: 12px 20px;
   border: none;
   border-radius: 8px;
