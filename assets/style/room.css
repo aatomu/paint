@@ -30,6 +30,7 @@ body {
   display: grid;
   grid-template:
     "head    head    head    head    head    head   " 2lh
+    "move    move    move    move    move    move   " min-content
     "pen     pen     pen     pen     pen     pen    " min-content
     "line    line    line    line    line    line   " min-content
     "stamp   stamp   stamp   stamp   stamp   stamp  " min-content
@@ -39,7 +40,7 @@ body {
     "opacity opacity opacity opacity opacity opacity" min-content
     "bold    bold    bold    bold    bold    bold   " min-content
     "undo    undo    undo    redo    redo    redo   " min-content
-    "in      in      move    move    out     out    " min-content
+    "in      in      in      out     out     out    " min-content
     "link    link    link    link    link    link   " min-content
     "png     png     png     svg     svg     svg    " min-content
     / 1fr 1fr 1fr 1fr 1fr 1fr;
