@@ -93,7 +93,7 @@ func middleware(h http.Handler) http.Handler {
 				})
 			}
 
-			if room == "" || user == "" {
+			if room == "" || user == "" || UserCheck(room, user) {
 				http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 				return
 			}
@@ -102,6 +102,20 @@ func middleware(h http.Handler) http.Handler {
 		// Compute
 		h.ServeHTTP(w, r)
 	})
+}
+
+func UserCheck(room, user string) bool {
+	RoomsLock.RLock()
+	r, ok := Rooms[room]
+	RoomsLock.RUnlock()
+	if !ok {
+		return false
+	}
+
+	r.RLock()
+	_, ok = r.Conn[user]
+	r.RUnlock()
+	return ok
 }
 
 // MARK: Websocket
@@ -128,35 +142,24 @@ func WebsocketRequest(w *websocket.Conn) {
 	}
 
 	// Save session
-	RoomsLock.Lock()
-	r, ok := Rooms[room]
+	r, ok := NewRoom(room, user, w)
 	if !ok {
-		r = &Room{
-			Conn: map[string]*websocket.Conn{},
-		}
-		Rooms[room] = r
-	}
-
-	if _, ok := r.Conn[user]; ok {
 		logger.Info("Duplicate access", "IP", source, "ID", user)
 		w.Close()
 		return
 	}
 
-	r.Lock()
-	r.Conn[user] = w
-	r.Unlock()
-	RoomsLock.Unlock()
-
 	defer func() {
 		r.Lock()
+		defer r.Unlock()
 		delete(r.Conn, user)
-		r.Unlock()
+
 		if len(r.Conn) == 0 {
 			RoomsLock.Lock()
+			defer RoomsLock.Unlock()
 			delete(Rooms, room)
-			RoomsLock.Unlock()
 		}
+
 		w.Close()
 	}()
 
@@ -317,9 +320,38 @@ func WebsocketRequest(w *websocket.Conn) {
 }
 
 func TransferAll(r string, p PacketEvent) {
-	Rooms[r].RLock()
-	for _, v := range Rooms[r].Conn {
+	RoomsLock.RLock()
+	room, ok := Rooms[r]
+	RoomsLock.RUnlock()
+	if !ok {
+		return
+	}
+
+	room.RLock()
+	for _, v := range room.Conn {
 		websocket.JSON.Send(v, p)
 	}
-	Rooms[r].RUnlock()
+	room.RUnlock()
+}
+
+func NewRoom(room, user string, w *websocket.Conn) (cr *Room, ok bool) {
+	RoomsLock.Lock()
+	r, ok := Rooms[room]
+	if !ok {
+		r = &Room{
+			Conn: map[string]*websocket.Conn{},
+		}
+		Rooms[room] = r
+	}
+	RoomsLock.Unlock()
+
+	if _, ok := r.Conn[user]; ok {
+		return r, false
+	}
+
+	r.Lock()
+	r.Conn[user] = w
+	r.Unlock()
+
+	return r, true
 }
