@@ -13,7 +13,6 @@ const input_join = document.getElementById("input_join")
 
 input_join.addEventListener("click", () => {
   if (input_name.value !== "" && input_room.value !== "") {
-    setCookie("user", input_name.value)
     const url = new URL(window.location.href)
     url.pathname = "room"
     url.search = ""

@@ -10,12 +10,3 @@ function getCookie(key) {
     find((row) => row.startsWith(`${key}=`))?.
     split("=")[1]
 }
-
-/**
- * @param {string} key
- * @param {string} value 
- */
-function setCookie(key,value) {
-  document.cookie = `${key}=${value}`
-}
-

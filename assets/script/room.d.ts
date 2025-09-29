@@ -31,7 +31,7 @@ type TransactionConfigration = {
 //   s=>c :"success"|"error"
 type PacketEvent = {
   packet_id: string;
-  name: string;
+  user: string;
 } & (
   | {
       operation: "";

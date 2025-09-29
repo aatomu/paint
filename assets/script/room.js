@@ -77,14 +77,18 @@ const transaction = {
 }
 
 const url = new URL(window.location.href)
+/** @type {string} */
+// @ts-expect-error
 const room = url.searchParams.get("id")
+/** @type {string} */
+// @ts-expect-error
 const user = url.searchParams.get("user")
 
 /** @type {{[packet_id: string]:PacketEvent}} */
 let packetStack = {
   "example": {
     packet_id: "",
-    name: "",
+    user: "",
     operation: "",
     data: null,
   }
@@ -165,7 +169,7 @@ function pointerEvent(event) {
   //     pointer.notify = 0
   //     sendPacket({
   //       packet_id: `mouse-${(new Date()).getTime()}`,
-  //       name: username,
+  //       user: user,
   //       operation: "mouse",
   //       data: {
   //         pos: [
@@ -330,7 +334,7 @@ function pointerMove(event) {
       /** @type {PacketEvent} */
       const packet = {
         packet_id: UUIDv7(),
-        name: username,
+        user: user,
         operation: "delete",
         data: {
           target: parseInt(target.id)
@@ -355,7 +359,7 @@ function pointerUp(event) {
     /** @type {PacketEvent} */
     const packet = {
       packet_id: UUIDv7(),
-      name: username,
+      user: user,
       operation: "create",
       data: pointer.current
     }
@@ -440,7 +444,7 @@ function updateBold(value) {
 undoInput.addEventListener("click", () => {
   sendPacket({
     packet_id: UUIDv7(),
-    name: username,
+    user: user,
     operation: "undo",
     data: {}
   })
@@ -450,7 +454,7 @@ undoInput.addEventListener("click", () => {
 redoInput.addEventListener("click", () => {
   sendPacket({
     packet_id: UUIDv7(),
-    name: username,
+    user: user,
     operation: "redo",
     data: {}
   })
@@ -462,7 +466,7 @@ clearInput.addEventListener("input", () => {
     /** @type {PacketEvent} */
     const packet = {
       packet_id: UUIDv7(),
-      name: username,
+      user: user,
       operation: "clear",
       data: {}
     }
@@ -480,11 +484,6 @@ if (document.readyState == "complete") {
 }
 
 function Initialize() {
-  if (!room || !user) {
-    if (room) setCookie("room", room)
-    if (user) setCookie("user", user)
-    window.location.href = "/"
-  }
 
   updateBoard()
   updateColor("#000000")
@@ -519,7 +518,7 @@ function WebsocketOpen(event) {
   if (transaction.requestHistory) {
     sendPacket({
       packet_id: new Date().getTime().toString(),
-      name: username,
+      user: user,
       operation: "history",
       data: {}
     })
@@ -530,7 +529,7 @@ function WebsocketOpen(event) {
   transaction.heartbeatId = setInterval(() => {
     sendPacket({
       packet_id: new Date().getTime().toString(),
-      name: username,
+      user: user,
       operation: "heatbeat",
       data: {}
     })

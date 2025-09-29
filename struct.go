@@ -42,7 +42,7 @@ func (ff fallbackFileSystem) Open(name string) (http.File, error) {
 
 type Room struct {
 	sync.RWMutex
-	Conn map[int64]*websocket.Conn
+	Conn map[string]*websocket.Conn
 }
 
 // MARK: Packet

@@ -11,7 +11,6 @@ import (
 	"runtime"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/google/uuid"
 	_ "github.com/mattn/go-sqlite3"
@@ -77,8 +76,24 @@ func middleware(h http.Handler) http.Handler {
 		logger.Info("new request", "IP", r.RemoteAddr, "Method", r.Method, "URI", r.URL, "Header", r.Header)
 
 		if strings.HasPrefix(r.URL.Path, "/room") {
-			if _, err := r.Cookie("name"); err != nil {
-				logger.Info("cookie(\"name\") is not found, 307redirect", "IP", r.RemoteAddr, "Transfer", "/")
+			room := r.URL.Query().Get("id")
+			if room != "" {
+				http.SetCookie(w, &http.Cookie{
+					Name:  "room",
+					Value: room,
+					Path:  "/",
+				})
+			}
+			user := r.URL.Query().Get("user")
+			if user != "" {
+				http.SetCookie(w, &http.Cookie{
+					Name:  "user",
+					Value: user,
+					Path:  "/",
+				})
+			}
+
+			if room == "" || user == "" {
 				http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 				return
 			}
@@ -91,17 +106,23 @@ func middleware(h http.Handler) http.Handler {
 
 // MARK: Websocket
 func WebsocketRequest(w *websocket.Conn) {
+	var source = w.Request().RemoteAddr
+
 	room := w.Request().URL.Query().Get("id")
 	if room == "" {
 		w.Close()
 		return
 	}
-	connId := time.Now().UnixNano()
+	user := w.Request().URL.Query().Get("user")
+	if user == "" {
+		w.Close()
+		return
+	}
 
 	// Board check
 	boardId, err := GetBoardId(room)
 	if err != nil {
-		logger.Error("Failed board get/create", "message", err)
+		logger.Error("Failed board get/create", "IP", source, "Room", room, "ID", user, "message", err)
 		w.Close()
 		return
 	}
@@ -111,19 +132,25 @@ func WebsocketRequest(w *websocket.Conn) {
 	r, ok := Rooms[room]
 	if !ok {
 		r = &Room{
-			Conn: map[int64]*websocket.Conn{},
+			Conn: map[string]*websocket.Conn{},
 		}
 		Rooms[room] = r
 	}
 
+	if _, ok := r.Conn[user]; ok {
+		logger.Info("Duplicate access", "IP", source, "ID", user)
+		w.Close()
+		return
+	}
+
 	r.Lock()
-	r.Conn[connId] = w
+	r.Conn[user] = w
 	r.Unlock()
 	RoomsLock.Unlock()
 
 	defer func() {
 		r.Lock()
-		delete(r.Conn, connId)
+		delete(r.Conn, user)
 		r.Unlock()
 		if len(r.Conn) == 0 {
 			RoomsLock.Lock()
@@ -134,7 +161,7 @@ func WebsocketRequest(w *websocket.Conn) {
 	}()
 
 	var packet string
-	var source = w.Request().RemoteAddr
+	logger.Info("New Websocket connection", "IP", source, "Room", room, "ID", user)
 	// MARK: > Read loop
 	for {
 		err := websocket.Message.Receive(w, &packet)
@@ -142,7 +169,7 @@ func WebsocketRequest(w *websocket.Conn) {
 			if err == io.EOF {
 				return
 			}
-			logger.Error("new message", "IP", source, "ID", connId, "packet", packet, "message", err)
+			logger.Error("new message", "IP", source, "Room", room, "ID", user, "packet", packet, "message", err)
 			return
 		}
 
@@ -154,7 +181,14 @@ func WebsocketRequest(w *websocket.Conn) {
 		if err != nil {
 			// ! Invalid Event
 			websocket.JSON.Send(w, event.Error("PacketEvent marshal error."))
-			logger.Error("PacketEvent marshal error", "ID", connId, "packet", packet, "message", err)
+			logger.Error("PacketEvent marshal error", "Room", room, "ID", user, "packet", packet, "message", err)
+			continue
+		}
+
+		// * Check user
+		if event.User != user {
+			// ! Invalid Event
+			websocket.JSON.Send(w, event.Error("User has unmatching."))
 			continue
 		}
 
@@ -176,7 +210,7 @@ func WebsocketRequest(w *websocket.Conn) {
 			result := event.HistoryEvent(boardId, w)
 			if !result.Ok() {
 				websocket.JSON.Send(w, event.Error(result.msg.client))
-				logger.Error(result.msg.server, "ID", connId, "packet", packet, "message", result.err)
+				logger.Error(result.msg.server, "Room", room, "ID", user, "packet", packet, "message", result.err)
 				continue
 			}
 
@@ -185,7 +219,7 @@ func WebsocketRequest(w *websocket.Conn) {
 			if err != nil {
 				// ! Invalid Event Property
 				websocket.JSON.Send(w, event.Error("PacketEventMouse marshal error."))
-				logger.Error("PacketEventMouse marshal error", "ID", connId, "packet", packet, "message", event)
+				logger.Error("PacketEventMouse marshal error", "Room", room, "ID", user, "packet", packet, "message", event)
 				continue
 			}
 
@@ -193,7 +227,7 @@ func WebsocketRequest(w *websocket.Conn) {
 			c, result := event.CreateEvent(dataDecoder, eventId, boardId)
 			if !result.Ok() {
 				websocket.JSON.Send(w, event.Error(result.msg.client))
-				logger.Error(result.msg.server, "ID", connId, "packet", packet, "message", result.err)
+				logger.Error(result.msg.server, "Room", room, "ID", user, "packet", packet, "message", result.err)
 				continue
 			}
 			TransferAll(room, PacketEvent{
@@ -208,7 +242,7 @@ func WebsocketRequest(w *websocket.Conn) {
 			result := event.DeleteEvent(dataDecoder, eventId, boardId)
 			if !result.Ok() {
 				websocket.JSON.Send(w, event.Error(result.msg.client))
-				logger.Error(result.msg.server, "ID", connId, "packet", packet, "message", result.err)
+				logger.Error(result.msg.server, "Room", room, "ID", user, "packet", packet, "message", result.err)
 				continue
 			}
 
@@ -216,7 +250,7 @@ func WebsocketRequest(w *websocket.Conn) {
 			result := event.UndoEvent(room, boardId)
 			if !result.Ok() {
 				websocket.JSON.Send(w, event.Error(result.msg.client))
-				logger.Error(result.msg.server, "ID", connId, "packet", packet, "message", result.err)
+				logger.Error(result.msg.server, "Room", room, "ID", user, "packet", packet, "message", result.err)
 				continue
 			}
 
@@ -224,7 +258,7 @@ func WebsocketRequest(w *websocket.Conn) {
 			result := event.RedoEvent(room, boardId)
 			if !result.Ok() {
 				websocket.JSON.Send(w, event.Error(result.msg.client))
-				logger.Error(result.msg.server, "ID", connId, "packet", packet, "message", result.err)
+				logger.Error(result.msg.server, "Room", room, "ID", user, "packet", packet, "message", result.err)
 				continue
 			}
 
@@ -232,7 +266,7 @@ func WebsocketRequest(w *websocket.Conn) {
 			result := event.ClearEvent(boardId)
 			if !result.Ok() {
 				websocket.JSON.Send(w, event.Error(result.msg.client))
-				logger.Error(result.msg.server, "ID", connId, "packet", packet, "message", result.err)
+				logger.Error(result.msg.server, "Room", room, "ID", user, "packet", packet, "message", result.err)
 				continue
 			}
 
@@ -248,13 +282,13 @@ func WebsocketRequest(w *websocket.Conn) {
 						PacketId: event.PacketId,
 						Message:  "Unknown packet error",
 					}))
-			logger.Warn("PacketEvent.Operation unknown", "ID", connId, "packet", packet, "message", event)
+			logger.Warn("PacketEvent.Operation unknown", "Room", room, "ID", user, "packet", packet, "message", event)
 			continue
 		}
 
 		// Send success
 		if !(event.Operation == "heatbeat" || event.Operation == "mouse") {
-			logger.Debug("success event", "IP", source, "ID", connId, "packet", packet)
+			logger.Debug("success event", "IP", source, "Room", room, "ID", user, "packet", packet)
 		}
 		websocket.JSON.Send(w,
 			PacketEvent{
@@ -272,7 +306,7 @@ func WebsocketRequest(w *websocket.Conn) {
 		if !(event.Operation == "histroy" || event.Operation == "create") {
 			Rooms[room].RLock()
 			for cId, v := range Rooms[room].Conn {
-				if cId == connId {
+				if cId == user {
 					continue
 				}
 				websocket.Message.Send(v, packet)
