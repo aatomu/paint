@@ -17,7 +17,7 @@ body {
   top: 2ch;
   left: 2ch;
 
-  padding: 0 1ch;
+  padding: 1ch;
 
   border-color: var(--border);
   border-width: 2px;
@@ -27,6 +27,7 @@ body {
 
 
   width: 20ch;
+  max-height: 90vh;
   display: grid;
   grid-template:
     "head    head    head    head    head    head   " 2lh
@@ -41,10 +42,12 @@ body {
     "bold    bold    bold    bold    bold    bold   " min-content
     "undo    undo    undo    redo    redo    redo   " min-content
     "in      in      in      out     out     out    " min-content
-    "link    link    link    link    link    link   " min-content
+    "export  export  export  export  export  export " min-content
     "png     png     png     svg     svg     svg    " min-content
     / 1fr 1fr 1fr 1fr 1fr 1fr;
   gap: 0.5ch;
+
+  overflow-y: auto;
 }
 
 .side-menu * {

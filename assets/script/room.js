@@ -40,6 +40,12 @@ const clearInput = document.getElementById("clear-input")
 /** @type HTMLInputElement */
 //@ts-expect-error
 const zoomOut = document.getElementById("zoom-out")
+/** @type HTMLInputElement */
+//@ts-expect-error
+const pngInput = document.getElementById("png-input")
+/** @type HTMLInputElement */
+//@ts-expect-error
+const svgInput = document.getElementById("svg-input")
 
 // MARK: Vars
 /** @type {BoardConfigration} */
@@ -71,6 +77,8 @@ const transaction = {
 }
 
 const username = getCookie("name") ?? ""
+const url = new URL(window.location.href)
+const room = url.searchParams.get("id") ?? "unknown"
 
 /** @type {{[packet_id: string]:PacketEvent}} */
 let packetStack = {
@@ -476,8 +484,7 @@ function Initialize() {
   updateColor("#000000")
   updateBold("15")
 
-  const url = new URL(window.location.href)
-  document.title += `- ${url.searchParams.get("id") ?? "unknown"}`
+  document.title += `- ${room}`
 
   NewWebsocket()
 }
@@ -748,6 +755,50 @@ function UUIDv7() {
   });
   return uuid
 }
+
+// MARK: Export *
+function downloadPNG() {// DL
+  const svg = board.cloneNode(true)
+  // @ts-expect-error
+  svg.setAttribute("style", "fill:none;")
+  const svgData = new XMLSerializer().serializeToString(svg);
+
+  const img = new Image()
+  const url = URL.createObjectURL(new Blob([svgData], { type: "image/svg+xml" }))
+
+  img.onload = function () {
+    const canvas = document.createElement("canvas");
+    canvas.width = board.clientWidth;
+    canvas.height = board.clientHeight;
+    console.log(board.getBoundingClientRect())
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return
+    ctx.drawImage(img, 0, 0);
+
+    const dl = document.createElement("a");
+    dl.href = canvas.toDataURL("image/png");
+    const now = new Date()
+    const timestamp = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, "0")}-${(now.getDate()).toString().padStart(2, "0")}_${(now.getHours()).toString().padStart(2, "0")}-${(now.getMinutes()).toString().padStart(2, "0")}-${(now.getSeconds()).toString().padStart(2, "0")}`
+    dl.setAttribute("download", `${room}_${timestamp}.png`);
+    dl.dispatchEvent(new MouseEvent("click"));
+  }
+  img.src = url
+};
+pngInput.addEventListener("click", downloadPNG)
+
+function downloadSVG() {// DL
+  const svg = board.cloneNode(true)
+  // @ts-expect-error
+  svg.setAttribute("style", "fill:none;")
+  const svgData = new XMLSerializer().serializeToString(svg);
+  const dl = document.createElement("a");
+  dl.href = "data:image/svg+xml;charset=utf-8;base64," + btoa(unescape(encodeURIComponent(svgData)))
+  const now = new Date()
+  const timestamp = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, "0")}-${(now.getDate()).toString().padStart(2, "0")}_${(now.getHours()).toString().padStart(2, "0")}-${(now.getMinutes()).toString().padStart(2, "0")}-${(now.getSeconds()).toString().padStart(2, "0")}`
+  dl.setAttribute("download", `${room}_${timestamp}.svg`);
+  dl.dispatchEvent(new MouseEvent("click"));
+};
+svgInput.addEventListener("click", downloadSVG)
 
 // MARK: generic method()
 /**
