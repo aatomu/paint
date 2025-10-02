@@ -1,0 +1,25 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap');
+
+:root {
+  --background-color: #004643;
+  --bg-secondly-color: #abd1c6;
+  --light: #255F38;
+  --lighter: #1F7D53;
+  --accent: #A8D58B;
+  --box-border: #001e1d;
+
+  --Headline: #fffffe;
+
+  --button: #C2E5FF;
+  --button-hover: #7DC7FF;
+  --button-select: #808080;
+}
+
+body {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  margin: 0;
+  font-family: cursive;
+  background-color: var(--background-color);
+}

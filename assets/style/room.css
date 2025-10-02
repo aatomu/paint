@@ -1,0 +1,243 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap');
+
+:root {
+  --index-board: 1;
+  --index-zoom: 2;
+  --index-sidemenu: 3;
+}
+
+body {
+  position: relative;
+  user-select: none;
+}
+
+.side-menu {
+  z-index: var(--index-sidemenu);
+  position: absolute;
+  top: 2ch;
+  left: 2ch;
+
+  padding: 1ch;
+
+  border-color: var(--border);
+  border-width: 2px;
+  border-style: solid;
+  border-radius: 2ch;
+  background-color: var(--bg-secondly-color);
+
+
+  width: 20ch;
+  max-height: 90vh;
+  display: grid;
+  grid-template:
+    "head    head    head    head    head    head   " 2lh
+    "move    move    move    move    move    move   " min-content
+    "pen     pen     pen     pen     pen     pen    " min-content
+    "line    line    line    line    line    line   " min-content
+    "stamp   stamp   stamp   stamp   stamp   stamp  " min-content
+    "delete  delete  delete  delete  delete  delete " min-content
+    "clear   clear   clear   clear   clear   clear  " min-content
+    "pallet  pallet  pallet  pallet  pallet  pallet " min-content
+    "opacity opacity opacity opacity opacity opacity" min-content
+    "bold    bold    bold    bold    bold    bold   " min-content
+    "undo    undo    undo    redo    redo    redo   " min-content
+    "in      in      in      out     out     out    " min-content
+    "export  export  export  export  export  export " min-content
+    "png     png     png     svg     svg     svg    " min-content
+    / 1fr 1fr 1fr 1fr 1fr 1fr;
+  gap: 0.5ch;
+
+  overflow-y: auto;
+}
+
+.side-menu * {
+  cursor: pointer;
+}
+
+.side-menu-icon {
+  height: 100%;
+  aspect-ratio: 1/1;
+
+  background-image: url("/image/icon.svg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.side-menu-icon:hover {
+  animation: rotation 2s linear 0s infinite normal both running;
+}
+
+@keyframes rotation {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(359.999deg);
+  }
+}
+
+.side-menu-area {
+  width: 100%;
+  height: 100%;
+
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+
+  box-sizing: border-box;
+  border-radius: 1ch;
+  padding: 0.25ch;
+
+  background-color: var(--button);
+
+  overflow: hidden;
+}
+
+.side-menu-area:hover {
+  background-color: var(--button-hover);
+}
+
+.side-menu-area:active {
+  background-color: var(--button-select);
+}
+
+.side-menu-area input[type=radio],
+.side-menu-area input[type=button] {
+  display: none;
+}
+
+.side-menu-area:has(input:checked) {
+  background-color: var(--button-select);
+}
+
+.side-menu-area .icon {
+  font-family: 'Noto Color Emoji';
+  font-size: 125%
+}
+
+.side-menu-area .button {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+}
+
+.side-menu-area .button.with-text {
+  justify-content: flex-start;
+}
+
+.side-menu-area .stamp-input {
+  padding: 0;
+
+  box-sizing: border-box;
+  height: 0lh;
+  width: 100%;
+  border-width: 0;
+
+  line-height: 0;
+  resize: none;
+  overflow: none;
+  transition: height 0.25s ease-in-out 0s;
+}
+
+.side-menu-area:has(input:checked) .stamp-input {
+  border-width: 2px;
+  line-height: 1lh;
+  height: 3lh;
+}
+
+.side-menu-area .range {
+  width: 100%;
+}
+
+.side-menu-area .templates {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  flex-direction: row;
+  justify-content: space-evenly;
+
+}
+
+.side-menu .color-template-preview {
+  height: 35px;
+  width: 35px;
+
+  box-sizing: border-box;
+  border-width: 2px;
+  border-style: solid;
+  border-color: lightgray;
+  border-radius: 50%;
+}
+
+
+.side-menu .bold-template {
+  width: 45px;
+  height: 45px;
+
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+}
+
+.side-menu .bold-template-preview {
+  aspect-ratio: 1/1;
+  border-radius: 50%;
+  background-color: black;
+}
+
+.side-menu .bold-input {
+  background: none;
+
+  border-width: 0 0 2px 0;
+
+  text-align: right;
+}
+
+.side-menu-area .clear-input {
+  padding: 0;
+
+  box-sizing: border-box;
+  height: 0lh;
+  width: 100%;
+  border-width: 0;
+
+  line-height: 0;
+  resize: none;
+  overflow: none;
+  transition: height 0.25s ease-in-out 0s;
+}
+
+.side-menu-area:has(input:checked) .clear-input {
+  border-width: 2px;
+  line-height: 1lh;
+  height: 1lh;
+}
+
+.zoom {
+  z-index: var(--index-zoom);
+  position: absolute;
+  bottom: 2ch;
+  left: 2ch;
+
+  border-radius: 5px;
+
+  background-color: rgb(from var(--bg-secondly-color) r g b/ 70%);
+}
+
+.board {
+  z-index: var(--index-board);
+  position: absolute;
+  transform-origin: 0 0;
+
+  min-width: 3840px;
+  min-height: 2160px;
+  width: 3840px;
+  height: 2160px;
+}

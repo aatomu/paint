@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+
+<head prefix="og: http://ogp.me/ns#">
+  <title>Paintboard.svg</title>
+
+  <meta charset="utf-8">
+
+  <meta charset="utf-8">
+  <meta name="theme-color" content="#1E90FF">
+  <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=5">
+
+  <meta property="og:image" content="/image/icon.png" />
+  <meta property="og:title" content="Paintboard.svg" />
+  <meta property="og:description" content="画質が無駄にいい わいわい使えるお絵かきサイト
+  by @aatomu, @SIGES_SSSPlide" />
+
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:site" content="@aatomu" />
+  <meta name="twitter:creator" content="@aatomu" />
+
+  <link type="image/svg+xml" href="/image/icon.svg" rel="icon">
+  <link href="/style/global.css" rel="stylesheet">
+  <link href="/style/room.css" rel="stylesheet">
+  <script data-cfasync="false" src="/script/global.js" defer></script>
+  <script data-cfasync="false" src="/script/room.js" defer></script>
+</head>
+
+<body>
+  <!-- Side menu -->
+  <div class="side-menu">
+    <label class="side-menu-area" style="grid-area: move;">
+      <div class="button with-text">
+        <span class="icon">&#x1F590;</span><span>Move</span>
+      </div>
+      <input type="radio" name="tool" value="move" checked>
+    </label>
+    <div class="side-menu-icon" style="grid-area: head;">
+    </div>
+    <label class="side-menu-area" style="grid-area: pen;">
+      <div class="button with-text">
+        <span class="icon">&#x270F;&#xFE0F;</span><span>Pen</span>
+      </div>
+      <input type="radio" name="tool" value="pen">
+    </label>
+    <label class="side-menu-area" style="grid-area: line;">
+      <div class="button with-text">
+        <span class="icon">&#x1F4CF;</span><span>Line</span>
+      </div>
+      <input type="radio" name="tool" value="line">
+    </label>
+    <label class="side-menu-area" style="grid-area: stamp;">
+      <div class="button with-text">
+        <span class="icon">&#x1F528;</span><span>Text Stamp</span>
+      </div>
+      <input type="radio" name="tool" value="stamp">
+      <textarea class="stamp-input" id="stamp-input"></textarea>
+    </label>
+    <label class="side-menu-area" style="grid-area: delete;">
+      <div class="button with-text">
+        <span class="icon">&#x1F5D1;&#xFE0F;</span><span>Delete Object</span>
+      </div>
+      <input type="radio" name="tool" value="delete">
+    </label>
+    <div class="side-menu-area" style="grid-area: pallet;">
+      <div>
+        <span class="icon">&#x1F3A8;</span><span>Pallet</span>
+      </div>
+      <div class="templates">
+        <div class="color-template">
+          <div class="color-template-preview" data-color="#ff0000"></div>
+        </div>
+        <div class="color-template">
+          <div class="color-template-preview" data-color="#ff9900"></div>
+        </div>
+        <div class="color-template">
+          <div class="color-template-preview" data-color="#ffff00"></div>
+        </div>
+        <div class="color-template">
+          <div class="color-template-preview" data-color="#339933"></div>
+        </div>
+        <div class="color-template">
+          <div class="color-template-preview" data-color="#66ccff"></div>
+        </div>
+        <div class="color-template">
+          <div class="color-template-preview" data-color="#0000ff"></div>
+        </div>
+        <div class="color-template">
+          <div class="color-template-preview" data-color="#ff00ff"></div>
+        </div>
+        <div class="color-template">
+          <div class="color-template-preview" data-color="#ffffff"></div>
+        </div>
+        <div class="color-template">
+          <div class="color-template-preview" data-color="#000000"></div>
+        </div>
+        <div class="color-template">
+          <input type="color" id="color-input" class="color-template-preview" style="background-color: none;" value="">
+        </div>
+      </div>
+    </div>
+    <label class="side-menu-area" style="grid-area: opacity;">
+      <div>
+        <span class="icon">&#x1F4A7;</span><span>Opacity</span>
+      </div>
+      <input type="range" min="1" max="100" step="1" value="100" class="range" id="opacity-range">
+      <span id="opacity-value">100%</span>
+    </label>
+    <div class="side-menu-area" style="grid-area: bold;">
+      <div>
+        <span class="icon">&#x2712;</span><span>Pen Bold</span>
+      </div>
+      <div class="templates">
+        <div class="bold-template">
+          <div class="bold-template-preview" data-bold="5"></div>
+        </div>
+        <div class="bold-template">
+          <div class="bold-template-preview" data-bold="15"></div>
+        </div>
+        <div class="bold-template">
+          <div class="bold-template-preview" data-bold="30"></div>
+        </div>
+      </div>
+      <input type="range" min="1" max="200" step="1" value="15" class="range bold" id="bold-range">
+      <span><input type="number" min="1" max="200" step="1" value="15" class= "bold-input" id="bold-input">px</span>
+    </div>
+    <label class="side-menu-area" style="grid-area: undo;">
+      <div class="button">
+        <span class="icon">&#x21A9;</span>
+      </div>
+      <input type="button" id="undo-input">
+    </label>
+    <label class="side-menu-area" style="grid-area: redo;">
+      <div class="button">
+        <span class="icon">&#x21AA;</span>
+      </div>
+      <input type="button" id="redo-input">
+    </label>
+    <label class="side-menu-area" style="grid-area: in;">
+      <div class="button">
+        <span class="icon">&#x2795;</span>
+      </div>
+      <input type="button" id="zoom-in">
+    </label>
+    <label class="side-menu-area" style="grid-area: out;">
+      <div class="button">
+        <span class="icon">&#x2796;</span>
+      </div>
+      <input type="button" id="zoom-out">
+    </label>
+    <label class="side-menu-area" style="grid-area: clear;">
+      <div class="button with-text">
+        <span class="icon">&#x1F4A3;</span><span>Clear Board</span>
+      </div>
+      <input type="radio" name="tool" value="clear">
+      <input type="text" class="clear-input" id="clear-input" placeholder='Input "clear board"'>
+    </label>
+    <span style="grid-area: export;text-align: center;">=== EXPORTER ===</span>
+    <label class="side-menu-area" style="grid-area: png;">
+      <div class="button">
+        <span class="icon">PNG</span>
+      </div>
+      <input type="button" id="png-input">
+    </label>
+    <label class="side-menu-area" style="grid-area: svg;">
+      <div class="button">
+        <span class="icon">SVG</span>
+      </div>
+      <input type="button" id="svg-input">
+    </label>
+  </div>
+  <span id="zoom-value" class="zoom"></span>
+  <svg id="board" class="board" width="3840px" height="2160px" xmlns="http://www.w3.org/2000/svg" style="fill: none; top:0px; left:0px">
+    <rect x="0" y="0" width="100%" height="100%" fill="#f0f0f0"></rect>
+  </svg>
+</body>
+
+</html>
