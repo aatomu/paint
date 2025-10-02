@@ -139,6 +139,23 @@ function zoom(zoomIn, center) {
 // MARK: pointerEvent
 window.addEventListener("mousemove", pointerEvent)
 
+window.addEventListener("touchstart", (event) => {
+  pointerDown({
+    x: event.touches[0].clientX,
+    y: event.touches[0].clientY
+  })
+})
+
+window.addEventListener("touchmove", (event) => {
+  pointerMove({
+    x: event.touches[0].clientX,
+    y: event.touches[0].clientY
+  })
+})
+
+window.addEventListener("touchend", (event) => {
+  pointerUp()
+})
 /**
  * @param {MouseEvent} event 
  * @return {void}
@@ -149,17 +166,23 @@ function pointerEvent(event) {
   let callback = null
   // change to down
   if (isDown && !pointer.isDownPrev) {
-    pointerDown(event)
+    pointerDown({
+      x: event.clientX,
+      y: event.clientY
+    })
     callback = "down"
   }
   // keep to down
   if (isDown && pointer.isDownPrev) {
-    pointerMove(event)
+    pointerMove({
+      x: event.clientX,
+      y: event.clientY
+    })
     callback = "move"
   }
   // change to up
   if (!isDown && pointer.isDownPrev) {
-    pointerUp(event)
+    pointerUp()
     callback = "up"
   }
 
@@ -187,20 +210,20 @@ function pointerEvent(event) {
 
 //MARK: > pointerDown
 /**
- * @param {MouseEvent} event
+ * @param {{x:number,y:number}} cursor
  * @return {void}
  */
-function pointerDown(event) {
+function pointerDown(cursor) {
   pointer.isDown = true
   pointer.prev = [
-    (event.clientX - boardConfig.offset[0]),
-    (event.clientY - boardConfig.offset[1])
+    (cursor.x - boardConfig.offset[0]),
+    (cursor.y - boardConfig.offset[1])
   ]
 
   // @ts-expect-error
   pointer.mode = document.querySelector("input[name=tool]:checked").value
 
-  if (isSidemenuArea([event.clientX, event.clientY])) {
+  if (isSidemenuArea([cursor.x, cursor.y])) {
     pointer.isDown = false
     console.log("cancel by .side-menu")
     return
@@ -267,13 +290,13 @@ function pointerDown(event) {
 
 //MARK: > pointerMove
 /**
- * @param {MouseEvent} event 
+ * @param {{x:number,y:number}} cursor
  * @return {void}
  */
-function pointerMove(event) {
+function pointerMove(cursor) {
   const position = [
-    (event.clientX - boardConfig.offset[0]),
-    (event.clientY - boardConfig.offset[1])
+    (cursor.x - boardConfig.offset[0]),
+    (cursor.y - boardConfig.offset[1])
   ]
 
   if (!pointer.isDown) return
@@ -349,10 +372,9 @@ function pointerMove(event) {
 
 //MARK: > pointerUp
 /**
- * @param {MouseEvent} event 
  * @return {void}
  */
-function pointerUp(event) {
+function pointerUp() {
   pointer.isDown = false
 
   if (pointer.current) {
@@ -541,7 +563,6 @@ function WebsocketOpen(event) {
  * @param {MessageEvent} event
  */
 function WebsocketMessage(event) {
-  console.log(JSON.stringify({ "event": "websocket", "callback": "message" }), event)
 
 
   //   c<=>s :"mouse"|"create"|"delete"|"undo"|"redo"|"clear"
@@ -627,6 +648,9 @@ function WebsocketMessage(event) {
       break
     }
   }
+  if (receivePacket.operation == "heatbeat") return
+  console.log(JSON.stringify({ "event": "websocket", "callback": "message" }), event)
+
 }
 
 // MARK: WebsocketError()
